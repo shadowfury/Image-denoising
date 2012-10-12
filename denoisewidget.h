@@ -7,11 +7,12 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QMenu>
+#include <QDialog>
 #include "Denoise.h"
 #include <QtGui/QWidget>
 
 
-class denoiseWidget : public QWidget
+class denoiseWidget : public QDialog
 {
     Q_OBJECT
     QGridLayout *layout;      // layout for the centralwidget

@@ -2,7 +2,7 @@
 
 
 denoiseWidget::denoiseWidget(QWidget *parent)
-    : QWidget(parent)
+    : QDialog(parent)
 {
     this->setWindowTitle("Doise method settings");
     layout = new QGridLayout(this);

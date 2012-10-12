@@ -5,12 +5,13 @@
 #include <QHBoxLayout>
 #include <QSlider>
 #include <QLabel>
+#include <QDialog>
 #include <QComboBox>
 #include "Noise.h"
 #include <QtGui/QWidget>
 
 
-class noiseWidget : public QWidget
+class noiseWidget : public QDialog
 {
     Q_OBJECT
     QGridLayout *layout;      // layout for the centralwidget

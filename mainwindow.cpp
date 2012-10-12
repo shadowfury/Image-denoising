@@ -11,7 +11,7 @@
 
 //#include "matrix.h"
 #include <time.h>
-QImage *Orig,*Noise,*Output,*Comparison,*Z,*X,*Y;
+QImage *Orig,*Noise,*Output,*Comparison;
 noiseClass* noiseSettings;
 denoiseClass* denoiseSettings;
 
@@ -51,6 +51,11 @@ long getAvailableSystemMemory()
 }
 long getProcMemory(){
     return 0;
+}
+long getCPUnum(){
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+    return sysinfo.dwNumberOfProcessors;
 }
 
 #endif
@@ -102,6 +107,10 @@ long getTotalSystemMemory()
     long page_size = sysconf(_SC_PAGE_SIZE);
     return pages * page_size/(1024*1024);
 }
+long getCPUnum(){
+    return sysconf( _SC_NPROCESSORS_ONLN );
+}
+
 #endif
 
 
@@ -154,12 +163,14 @@ MainWindow::MainWindow(QWidget *parent) :
     Comparison = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     Comparison->fill(Qt::transparent);
 
-    Z = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
-    Z->fill(Qt::black);
+
 
     noiseSettings= new noiseClass();
     denoiseSettings= new denoiseClass();
     nw= new noiseWidget();
+    nw->on_slideIntensity_valueChanged(30);
+    nw->on_slideProbability_valueChanged(50);
+
     dw= new denoiseWidget();
     dw->initCombo(ui->menuBar->actions().at(0)->menu(),flag);
 
@@ -184,7 +195,6 @@ MainWindow::~MainWindow()
     delete Orig;
     delete Noise;
     delete Comparison;
-    delete Z;
     delete noiseSettings;
     nw->setVisible(false);
     dw->setVisible(false);
@@ -214,7 +224,7 @@ void MainWindow::on_openButton_clicked()
         delete Noise;
         delete Output;
         delete Comparison;
-        delete Orig;
+        //delete Orig;
         Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
         Orig->load(fileName);
         Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
@@ -297,10 +307,8 @@ void MainWindow::on_denoiseButton_clicked(){
     }
     if (flag==1){
         ui->progressBar->setValue(0);
-        int size_m=denoiseSettings->patch_size;
-        int size_b=denoiseSettings->search_window;
-        int h=denoiseSettings->pow;
-        QtConcurrent::run(this,&MainWindow::non_local_means_method,size_m,size_b,h);
+        QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+" ";
+        QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,true);
     }
     if (flag==2){
         ui->progressBar->setValue(0);
@@ -315,6 +323,11 @@ void MainWindow::on_denoiseButton_clicked(){
         int size_b=denoiseSettings->search_window;
         int h=denoiseSettings->pow;
         QtConcurrent::run(this,&MainWindow::Nlm_fast_FFT,size_m,size_b,h);
+    }
+    if (flag==4){
+        ui->progressBar->setValue(0);
+        QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+" ";
+        QtConcurrent::run(this,&MainWindow::non_local_means_method_multyThread,Noise,Output,settings);
     }
 }
 //saving files to images and csv
@@ -560,15 +573,18 @@ void MainWindow::simple_squares_method(int size){
 
 }
 
-void MainWindow::non_local_means_method(int size_m,int size_b,int h)
+void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString settings, bool silent)
 {
+    int size_m=settings.section(" ",1,1).toInt();
+    int size_b=settings.section(" ",2,2).toInt();
+    int h=settings.section(" ",3,3).toInt();
     isRendering=true;
     QElapsedTimer time,update;
     double diff=0,paused=0;
     time.start();
     update.start();
-    QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: computing."));
-    QMetaObject::invokeMethod(this,"iconPause");
+    if(!silent) QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: computing."));
+    if(!silent) QMetaObject::invokeMethod(this,"iconPause");
 
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
@@ -576,7 +592,8 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
     QColor p,q,fin,out,noize;
     rgb_my Weight[size_b][size_b],z;
     for (int y=0;y<n;y++){
-        QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, (y*100)/(n-1)));        
+        if(!silent) QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, (y*100)/(n-1)));
+        //if(silent)qDebug()<<"progress"<<(y*100)/(n-1);
         for (int x=0;x<m;x++){
             if (isPaused){
                 QElapsedTimer pauseTime;
@@ -589,7 +606,8 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
             }
             if (!isRendering){
                 diff=(double)time.elapsed()/1000;
-                QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
+                if(!silent) QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
+                //if(silent)qDebug()<<"finished"<<diff-paused;
                 return;
             }
             z.setBlue(0);
@@ -610,7 +628,7 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
                             else x_m=x-m_size+a;
                             if ((y-m_size+b>=n)||(y-m_size+b<0)) y_m=y+m_size-b;
                             else y_m=y-m_size+b;
-                            p=Noise->pixel(x_m,y_m);
+                            p=inim->pixel(x_m,y_m);
 
                             if ((x-m_size_b+i>=m)||(x-m_size_b+i<0)) x_f=x+m_size_b-i;
                             else x_f=x-m_size_b+i;
@@ -622,7 +640,7 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
                             if ((y_f-m_size+b>=n)||(y_f-m_size+b<0)) y_ff=y_f+m_size-b;
                             else y_ff=y_f-m_size+b;
 
-                            q=Noise->pixel(x_ff,y_ff);//*/
+                            q=inim->pixel(x_ff,y_ff);//*/
                             Weight[i][j].setRed(Weight[i][j].red()+pow(p.red()-q.red(),2));
                             Weight[i][j].setBlue(Weight[i][j].blue()+pow(p.blue()-q.blue(),2));
                             Weight[i][j].setGreen(Weight[i][j].green()+pow(p.green()-q.green(),2));
@@ -643,30 +661,30 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
             fin.setRed(0);
             fin.setBlue(0);
             fin.setGreen(0);
-            Output->setPixel(x,y,fin.rgb());
+            outim->setPixel(x,y,fin.rgb());
 
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
                     //if ((x+ii-m_size_b<m)&&(x+ii-m_size_b>=0)&&(y+jj-m_size_b<n)&&(y+jj-m_size_b>=0)){
                         if ((x+ii-m_size_b>=m)||(x+ii-m_size_b<0)) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
-                            noize=Noise->pixel(x-ii+m_size_b,y+jj-m_size_b);
+                            noize=inim->pixel(x-ii+m_size_b,y+jj-m_size_b);
                         if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if ((y+jj-m_size_b>=n)||(y+jj-m_size_b<=0))
-                            noize=Noise->pixel(x+ii-m_size_b,y-jj+m_size_b);
+                            noize=inim->pixel(x+ii-m_size_b,y-jj+m_size_b);
                         if (((x+ii-m_size_b>=m)||(x+ii-m_size_b<0))&&((y+jj-m_size_b>=n)||(y+jj-m_size_b<0)))
-                            noize=Noise->pixel(x-ii+m_size_b,y-jj+m_size_b);
+                            noize=inim->pixel(x-ii+m_size_b,y-jj+m_size_b);
                         if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
-                            noize=Noise->pixel(x+ii-m_size_b,y+jj-m_size_b);
+                            noize=inim->pixel(x+ii-m_size_b,y+jj-m_size_b);
                         Weight[ii][jj].setRed(Weight[ii][jj].red()*(noize.red())/z.red());
                         Weight[ii][jj].setBlue(Weight[ii][jj].blue()*(noize.blue())/z.blue());
                         Weight[ii][jj].setGreen(Weight[ii][jj].green()*(noize.green())/z.green());
                         fin.setRed(qRound(Weight[ii][jj].red()));
                         fin.setBlue(qRound(Weight[ii][jj].blue()));
                         fin.setGreen(qRound(Weight[ii][jj].green()));
-                        out=Output->pixel(x,y);
+                        out=outim->pixel(x,y);
                         out.setRed(out.red()+fin.red());
                         out.setBlue(out.blue()+fin.blue());
                         out.setGreen(out.green()+fin.green());
-                        Output->setPixel(x,y,out.rgb());
+                        outim->setPixel(x,y,out.rgb());
                     //}
 
                 }
@@ -674,27 +692,37 @@ void MainWindow::non_local_means_method(int size_m,int size_b,int h)
             if (update.elapsed()>30){
 
                 update.restart();
-                QMetaObject::invokeMethod(this,"updatePixel");
+                if(!silent) QMetaObject::invokeMethod(this,"updatePixel");
             }
 
         }
 
     }
     diff=(double)time.elapsed()/1000;
-    QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: done."));
-    QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
+    if(!silent) QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: done."));
+    if(!silent) QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
+    if(silent) isRendering=false;
+    //if(silent)qDebug()<<"finished"<<diff-paused;
 
 /*
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   */
 }
+
+
+void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings)
+{
+    long CPUnum=getCPUnum();
+
+}
+
 void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
 {
     isRendering=true;
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
-    //brainblowing creating 4d dynamic array.
-    //rgb_my* Sdx=new rgb_my[size_b*size_b*m*n];
+    // to avoid running out of RAM, checking for available ram memory
+
     if ((getAvailableSystemMemory()+getProcMemory())<((long)sizeof(rgb_my)*m*n*size_b*size_b)/(1024*1024)){
         QMetaObject::invokeMethod(this,"popMessageBox", Q_ARG(int,m), Q_ARG(int,n), Q_ARG(int,size_b));
         return;
@@ -709,7 +737,9 @@ void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
     QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, 0));
 
 
-
+    //brainblowing creating 4d dynamic array.
+    // probably wrap array into something like this
+    //rgb_my* Sdx=new rgb_my[size_b*size_b*m*n];
     rgb_my**** Sdx=new rgb_my***[m];
     for (int i=0;i<m;i++){
         QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, (i*100)/(m-1)));
@@ -797,7 +827,7 @@ void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
                 QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
                 return;
             }
-            //перед кожною ітерацією обнулення Z
+            //setting normalizing constant to zero
             z.setBlue(0);
             z.setGreen(0);
             z.setRed(0);

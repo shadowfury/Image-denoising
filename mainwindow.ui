@@ -1313,6 +1313,7 @@
     <addaction name="actionNon_local_means"/>
     <addaction name="actionLocal_means"/>
     <addaction name="actionNlm_fast_FFT"/>
+    <addaction name="actionNlm_classic_with_multi_threads"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -1356,6 +1357,11 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionNlm_classic_with_multi_threads">
+   <property name="text">
+    <string>Nlm (classic with multi-threads)</string>
    </property>
   </action>
  </widget>

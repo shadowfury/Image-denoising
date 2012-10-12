@@ -3,7 +3,7 @@
 
 
 noiseWidget::noiseWidget(QWidget *parent)
-    : QWidget(parent)
+    : QDialog(parent)
 {
     this->setWindowTitle("Noise settings");
     layout = new QGridLayout(this);
@@ -79,12 +79,14 @@ void noiseWidget::on_slideIntensity_valueChanged(int value)
     edit_int_red->setText(QString::number(value));
     edit_int_green->setText(QString::number(value));
     edit_int_blue->setText(QString::number(value));
+    slideIntensity->setValue(value);
 }
 void noiseWidget::on_slideProbability_valueChanged(int value)
 {
     edit_pro_red->setText(QString::number(value));
     edit_pro_green->setText(QString::number(value));
     edit_pro_blue->setText(QString::number(value));
+    slideProbability->setValue(value);
 }
 
 

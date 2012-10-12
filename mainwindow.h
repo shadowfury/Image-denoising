@@ -36,7 +36,8 @@ public slots:
     void on_pushButton_6_clicked();
 
     void simple_squares_method(int size);
-    void non_local_means_method(int size_m,int size_b,int h);
+    void non_local_means_method(QImage *inim,QImage *outim,QString settings, bool silent);
+    void non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings);
     void non_local_means_method_fast(int size_m,int size_b,int h);
     void Nlm_fast_FFT(int size_m,int size_b,int h);
 
