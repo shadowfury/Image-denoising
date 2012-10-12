@@ -307,8 +307,9 @@ void MainWindow::on_denoiseButton_clicked(){
     }
     if (flag==1){
         ui->progressBar->setValue(0);
-        QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+" ";
-        QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,true);
+        QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+
+                " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
+        QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,false);
     }
     if (flag==2){
         ui->progressBar->setValue(0);
@@ -578,11 +579,15 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
     int size_m=settings.section(" ",1,1).toInt();
     int size_b=settings.section(" ",2,2).toInt();
     int h=settings.section(" ",3,3).toInt();
+    int beginY=settings.section(" ",4,4).toInt();
+    int endY=settings.section(" ",5,5).toInt();
+    int beginX=settings.section(" ",6,6).toInt();
+    int endX=settings.section(" ",7,7).toInt();
     isRendering=true;
     QElapsedTimer time,update;
     double diff=0,paused=0;
     time.start();
-    update.start();
+    if(!silent) update.start();
     if(!silent) QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: computing."));
     if(!silent) QMetaObject::invokeMethod(this,"iconPause");
 
@@ -591,10 +596,10 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
     //int c=0;
     QColor p,q,fin,out,noize;
     rgb_my Weight[size_b][size_b],z;
-    for (int y=0;y<n;y++){
+    for (int y=beginY;y<endY;y++){
         if(!silent) QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, (y*100)/(n-1)));
         //if(silent)qDebug()<<"progress"<<(y*100)/(n-1);
-        for (int x=0;x<m;x++){
+        for (int x=beginX;x<endX;x++){
             if (isPaused){
                 QElapsedTimer pauseTime;
                 pauseTime.start();
@@ -624,20 +629,20 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
                                 //if ((x-m_size_b-m_size+a+i<m)&&(x-m_size_b-m_size+a+i>=0)&&(y-m_size_b-m_size+b+j<n)&&(y-m_size_b-m_size+b+j>=0)){
                             int x_m=0,y_m=0,x_f=0,y_f=0,x_ff=0,y_ff=0;
 
-                            if ((x-m_size+a>=m)||(x-m_size+a<0)) x_m=x+m_size-a;
+                            if ((x-m_size+a>=endX)||(x-m_size+a<beginX)) x_m=x+m_size-a;
                             else x_m=x-m_size+a;
-                            if ((y-m_size+b>=n)||(y-m_size+b<0)) y_m=y+m_size-b;
+                            if ((y-m_size+b>=endY)||(y-m_size+b<beginY)) y_m=y+m_size-b;
                             else y_m=y-m_size+b;
                             p=inim->pixel(x_m,y_m);
 
-                            if ((x-m_size_b+i>=m)||(x-m_size_b+i<0)) x_f=x+m_size_b-i;
+                            if ((x-m_size_b+i>=endX)||(x-m_size_b+i<beginX)) x_f=x+m_size_b-i;
                             else x_f=x-m_size_b+i;
-                            if ((y-m_size_b+j>=n)||(y-m_size_b+j<0)) y_f=y+m_size_b-j;
+                            if ((y-m_size_b+j>=endY)||(y-m_size_b+j<beginY)) y_f=y+m_size_b-j;
                             else y_f=y-m_size_b+j;
 
-                            if ((x_f-m_size+a>=m)||(x_f-m_size+a<0)) x_ff=x_f+m_size-a;
+                            if ((x_f-m_size+a>=endX)||(x_f-m_size+a<beginX)) x_ff=x_f+m_size-a;
                             else x_ff=x_f-m_size+a;
-                            if ((y_f-m_size+b>=n)||(y_f-m_size+b<0)) y_ff=y_f+m_size-b;
+                            if ((y_f-m_size+b>=endY)||(y_f-m_size+b<beginY)) y_ff=y_f+m_size-b;
                             else y_ff=y_f-m_size+b;
 
                             q=inim->pixel(x_ff,y_ff);//*/
@@ -651,7 +656,6 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
                     Weight[i][j].setGreen(exp(-Weight[i][j].green()/pow(h,2)));
 
                     z.setRed(z.red()+Weight[i][j].red());
-                    //printf("iteration %d after, z.red=%f\n",c,z.red);
                     z.setBlue(z.blue()+Weight[i][j].blue());
                     z.setGreen(z.green()+Weight[i][j].green());
 
@@ -666,13 +670,13 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
                     //if ((x+ii-m_size_b<m)&&(x+ii-m_size_b>=0)&&(y+jj-m_size_b<n)&&(y+jj-m_size_b>=0)){
-                        if ((x+ii-m_size_b>=m)||(x+ii-m_size_b<0)) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
+                        if ((x+ii-m_size_b>=endX)||(x+ii-m_size_b<beginX)) if (y+jj-m_size_b<endY) if (y+jj-m_size_b>=beginY)
                             noize=inim->pixel(x-ii+m_size_b,y+jj-m_size_b);
-                        if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if ((y+jj-m_size_b>=n)||(y+jj-m_size_b<=0))
+                        if (x+ii-m_size_b<endX) if (x+ii-m_size_b>=beginX) if ((y+jj-m_size_b>=endY)||(y+jj-m_size_b<=beginY))
                             noize=inim->pixel(x+ii-m_size_b,y-jj+m_size_b);
-                        if (((x+ii-m_size_b>=m)||(x+ii-m_size_b<0))&&((y+jj-m_size_b>=n)||(y+jj-m_size_b<0)))
+                        if (((x+ii-m_size_b>=endX)||(x+ii-m_size_b<beginX))&&((y+jj-m_size_b>=endY)||(y+jj-m_size_b<beginY)))
                             noize=inim->pixel(x-ii+m_size_b,y-jj+m_size_b);
-                        if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
+                        if (x+ii-m_size_b<endX) if (x+ii-m_size_b>=beginX) if (y+jj-m_size_b<endY) if (y+jj-m_size_b>=beginY)
                             noize=inim->pixel(x+ii-m_size_b,y+jj-m_size_b);
                         Weight[ii][jj].setRed(Weight[ii][jj].red()*(noize.red())/z.red());
                         Weight[ii][jj].setBlue(Weight[ii][jj].blue()*(noize.blue())/z.blue());
@@ -689,10 +693,10 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 
                 }
             }
-            if (update.elapsed()>30){
+            if ((!silent)&&(update.elapsed()>30)){
 
                 update.restart();
-                if(!silent) QMetaObject::invokeMethod(this,"updatePixel");
+                QMetaObject::invokeMethod(this,"updatePixel");
             }
 
         }
@@ -713,6 +717,7 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings)
 {
     long CPUnum=getCPUnum();
+
 
 }
 
