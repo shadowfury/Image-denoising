@@ -39,8 +39,7 @@ public slots:
     void non_local_means_method(int size_m,int size_b,int h);
     void non_local_means_method_fast(int size_m,int size_b,int h);
     void Nlm_fast_FFT(int size_m,int size_b,int h);
-    void Wiener(QImage *X,QImage *Y,QImage *Z,int number,int m1,int n1);
-    void lagrange(QImage *X,QImage *Y,QImage *Z,int number,int m1,int n1);
+
 
 
 private slots:
@@ -61,18 +60,8 @@ private slots:
     void popMessageBox(int m1,int n1,int size_b);
     void iconPause();
 
-    void on_pushButton_12_clicked();
-    void on_pushButton_7_clicked();
-    void on_pushButton_14_clicked();
-    void on_commandLinkButton_2_clicked();
-    void on_commandLinkButton_clicked();
-    void on_commandLinkButton_4_clicked();
-    void on_commandLinkButton_3_clicked();
-    void on_commandLinkButton_6_clicked();
-    void on_commandLinkButton_5_clicked();
-    void on_horizontalSlider_2_valueChanged();
-    void on_pushButton_15_clicked();
-    void on_pushButton_16_clicked();
+
+
 
 
 

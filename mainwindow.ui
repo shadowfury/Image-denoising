@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>635</width>
+    <width>680</width>
     <height>603</height>
    </rect>
   </property>
@@ -182,7 +182,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>399</height>
             </rect>
            </property>
@@ -239,7 +239,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>399</height>
             </rect>
            </property>
@@ -335,7 +335,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>399</height>
             </rect>
            </property>
@@ -468,7 +468,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>399</height>
             </rect>
            </property>
@@ -564,7 +564,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>403</height>
             </rect>
            </property>
@@ -801,7 +801,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>403</height>
             </rect>
            </property>
@@ -1037,7 +1037,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>403</height>
             </rect>
            </property>
@@ -1249,7 +1249,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>593</width>
+             <width>638</width>
              <height>403</height>
             </rect>
            </property>
@@ -1301,7 +1301,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>635</width>
+     <width>680</width>
      <height>25</height>
     </rect>
    </property>
@@ -1313,8 +1313,6 @@
     <addaction name="actionNon_local_means"/>
     <addaction name="actionLocal_means"/>
     <addaction name="actionNlm_fast_FFT"/>
-    <addaction name="actionWinner_s_method"/>
-    <addaction name="actionInterpolation_method"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
