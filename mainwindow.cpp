@@ -7,6 +7,8 @@
 #include <QImageReader>
 #include <QImage>
 #include <QPixmap>
+#include <QVector>
+#include <QFuture>
 
 
 //#include "matrix.h"
@@ -20,14 +22,6 @@ int flag=0;
 bool isPaused=false,isRendering=false;
 
 float RandNorm( int num );
-void image_to_float(QImage* im,float **mass,int color_n,int ord,int m1,int n1);
-
-void rgbmy_to_float(rgb_my **im,float **mass,int color_n,int ord,int m1,int n1);
-void pinv(rgb_my **in,rgb_my **out,int m1,int n1);
-
-//lagrangelike
-
-
 
 
 #ifdef Q_OS_WIN
@@ -401,11 +395,11 @@ int MainWindow::noisePixelplus(int noiseVal,int pixVal,int prob)
 {
     int rnd=rand()%100;
     if (rnd<prob) rnd=1;
-    else rnd=0;
+    else return pixVal;
 
     if ((pixVal+noiseVal>255)&&rnd) return 255;
     else if ((pixVal+noiseVal<0)&&rnd) return 0;
-    else if ((pixVal+noiseVal<255)&&(pixVal+noiseVal>0)&&rnd){
+    else if ((pixVal+noiseVal<255)&&(pixVal+noiseVal>=0)&&rnd){
             return pixVal+noiseVal*rnd;
     }
     return pixVal;
@@ -414,11 +408,11 @@ int MainWindow::noisePixelminus(int noiseVal,int pixVal,int prob)
 {
     int rnd=rand()%100;
     if (rnd<prob) rnd=1;
-    else rnd=0;
+    else return pixVal;
 
     if ((pixVal-noiseVal>255)&&rnd) return 255;
     else if ((pixVal-noiseVal<0)&&rnd) return 0;
-    else if ((pixVal-noiseVal<255)&&(pixVal-noiseVal>0)&&rnd){
+    else if ((pixVal-noiseVal<255)&&(pixVal-noiseVal>=0)&&rnd){
             return pixVal-noiseVal*rnd;
     }
     return pixVal;
@@ -427,7 +421,6 @@ void MainWindow::add_noise(QImage *original,QImage *noised,noiseClass* noiseSett
     QColor p;
     for(int i=0;i<m;i++){
         for(int j=0;j<n;j++){
-            //QColor(p)
             p = original->pixel(i,j);
 
             p.setRed(noisePixelplus(noiseSettings->int_red,p.red(),noiseSettings->pro_red));
@@ -705,7 +698,7 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
     diff=(double)time.elapsed()/1000;
     if(!silent) QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: done."));
     if(!silent) QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
-    if(silent) isRendering=false;
+    //if(silent) isRendering=false;
     //if(silent)qDebug()<<"finished"<<diff-paused;
 
 /*
@@ -716,7 +709,45 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 
 void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings)
 {
-    long CPUnum=getCPUnum();
+    long CPUnum=getCPUnum()-1;
+    // +QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
+    QImage* in_arr=new QImage[CPUnum];
+    QImage* out_arr=new QImage[CPUnum];
+    QVector<QFuture<void> > results;
+    for (long i=0;i<CPUnum;i++){
+
+        in_arr[i]=  QImage(*inim);
+        out_arr[i]= QImage(*outim);
+
+        QFuture<void> future =QtConcurrent::run(this,&MainWindow::non_local_means_method,in_arr+i,out_arr+i,settings
+                                                +QString::number(i*(n-1)/CPUnum)+" "+QString::number(((i+1)*n)/CPUnum)+" "+QString::number(0)+" "+QString::number(m)+" ",true);
+
+        results.append(future);
+    }
+    QElapsedTimer merge,common;
+    int finish=0;
+    merge.start();
+    common.start();
+    while (finish!=CPUnum){
+        finish=0;
+        for (long i=0;i<CPUnum;i++) if (results.at(i).isFinished()) finish++;
+        if ((merge.elapsed()>30)){
+            merge.restart();
+            for (long i=0;i<CPUnum;i++){
+                for (int n1=i*(n)/CPUnum;n1<((i+1)*n)/CPUnum;n1++){
+                    for (int m1=0;m1<m;m1++){
+                        Output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
+                    }
+                }
+            }
+            QMetaObject::invokeMethod(this,"updatePixel");
+        }
+    }
+    double diff=(double)common.elapsed()/1000;
+    QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff));
+
+    delete[] in_arr;
+    delete[] out_arr;
 
 
 }
