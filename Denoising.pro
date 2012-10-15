@@ -12,7 +12,6 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    matrix.cpp \
     noisewidget.cpp \
     denoisewidget.cpp
 
