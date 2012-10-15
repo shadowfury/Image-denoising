@@ -709,19 +709,19 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 
 void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings)
 {
-    long CPUnum=getCPUnum()-1;
+    int CPUnum=getCPUnum()-1;
     // +QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
     QImage* in_arr=new QImage[CPUnum];
     QImage* out_arr=new QImage[CPUnum];
     QVector<QFuture<void> > results;
-    for (long i=0;i<CPUnum;i++){
-
+    for (int i=0;i<CPUnum;i++){
         in_arr[i]=  QImage(*inim);
         out_arr[i]= QImage(*outim);
-
-        QFuture<void> future =QtConcurrent::run(this,&MainWindow::non_local_means_method,in_arr+i,out_arr+i,settings
-                                                +QString::number(i*(n-1)/CPUnum)+" "+QString::number(((i+1)*n)/CPUnum)+" "+QString::number(0)+" "+QString::number(m)+" ",true);
-
+        QString sets2;
+        if ((i!=0)&&(i!=CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" ";
+        else if (i==0) sets2=QString::number(i*(n)/CPUnum)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" ";
+        else if (i==(CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum)+" "+QString::number(0)+" "+QString::number(m)+" ";
+        QFuture<void> future =QtConcurrent::run(this,&MainWindow::non_local_means_method,in_arr+i,out_arr+i,settings+sets2,true);
         results.append(future);
     }
     QElapsedTimer merge,common;
@@ -730,26 +730,30 @@ void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,Q
     common.start();
     while (finish!=CPUnum){
         finish=0;
-        for (long i=0;i<CPUnum;i++) if (results.at(i).isFinished()) finish++;
-        if ((merge.elapsed()>30)){
+        for (int i=0;i<CPUnum;i++) if (results.at(i).isFinished()) finish++;
+        if ((merge.elapsed()>30)&&!isPaused){
             merge.restart();
-            for (long i=0;i<CPUnum;i++){
-                for (int n1=i*(n)/CPUnum;n1<((i+1)*n)/CPUnum;n1++){
-                    for (int m1=0;m1<m;m1++){
+            for (int i=0;i<CPUnum;i++)
+                for (int n1=(i*(n)/CPUnum);n1<((i+1)*n)/CPUnum;n1++)
+                    for (int m1=0;m1<m;m1++)
                         Output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
-                    }
-                }
-            }
             QMetaObject::invokeMethod(this,"updatePixel");
         }
+        sleep(5);
     }
     double diff=(double)common.elapsed()/1000;
     QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff));
 
     delete[] in_arr;
+
+    for (int i=0;i<CPUnum;i++)
+        for (int n1=(i*(n)/CPUnum);n1<((i+1)*n)/CPUnum;n1++)
+            for (int m1=0;m1<m;m1++)
+                Output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
+    QMetaObject::invokeMethod(this,"updatePixel");
+    //for (int i=0; i<CPUnum;i++) out_arr[i].save("out["+QString::number(i)+"].jpg", 0,-1);
+    //Output->save("Output.jpg", 0,-1);
     delete[] out_arr;
-
-
 }
 
 void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
