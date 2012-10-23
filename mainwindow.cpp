@@ -131,6 +131,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     index=0;
+
     //ui->label->scroll(100,100);
     srand ( time(NULL) );
     qsrand(time(NULL));
@@ -300,10 +301,11 @@ void MainWindow::on_denoiseButton_clicked(){
         QtConcurrent::run(this,&MainWindow::simple_squares_method,size);
     }
     if (flag==1){
+        int pro[1];
         ui->progressBar->setValue(0);
         QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+
-                " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
-        QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,false);
+                " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" false ";
+        QFuture<void> future=QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,pro+0);
     }
     if (flag==2){
         ui->progressBar->setValue(0);
@@ -567,15 +569,13 @@ void MainWindow::simple_squares_method(int size){
 
 }
 
-void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString settings, bool silent)
+void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString settings, int* progress)
 {
-    int size_m=settings.section(" ",1,1).toInt();
-    int size_b=settings.section(" ",2,2).toInt();
-    int h=settings.section(" ",3,3).toInt();
-    int beginY=settings.section(" ",4,4).toInt();
-    int endY=settings.section(" ",5,5).toInt();
-    int beginX=settings.section(" ",6,6).toInt();
-    int endX=settings.section(" ",7,7).toInt();
+    int size_m=settings.section(" ",1,1).toInt(), size_b=settings.section(" ",2,2).toInt(), h=settings.section(" ",3,3).toInt(),
+            beginY=settings.section(" ",4,4).toInt(), endY=settings.section(" ",5,5).toInt(),beginX=settings.section(" ",6,6).toInt(),
+            endX=settings.section(" ",7,7).toInt();
+    bool silent=true;
+    if (settings.section(" ",8,8)=="false") silent=false;
     isRendering=true;
     QElapsedTimer time,update;
     double diff=0,paused=0;
@@ -590,8 +590,10 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
     QColor p,q,fin,out,noize;
     rgb_my Weight[size_b][size_b],z;
     for (int y=beginY;y<endY;y++){
-        if(!silent) QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, (y*100)/(n-1)));
-        //if(silent)qDebug()<<"progress"<<(y*100)/(n-1);
+        if(!silent) QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, ((y-beginY)*100)/(endY-beginY-1)));
+        if (silent){
+            *progress=((y-beginY)*100)/(endY-beginY-1);
+        }
         for (int x=beginX;x<endX;x++){
             if (isPaused){
                 QElapsedTimer pauseTime;
@@ -707,9 +709,11 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 }
 
 
+
 void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings)
 {
     int CPUnum=getCPUnum()-1;
+    int *progressArr=new int[CPUnum];
     // +QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
     QImage* in_arr=new QImage[CPUnum];
     QImage* out_arr=new QImage[CPUnum];
@@ -718,17 +722,29 @@ void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,Q
         in_arr[i]=  QImage(*inim);
         out_arr[i]= QImage(*outim);
         QString sets2;
-        if ((i!=0)&&(i!=CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" ";
-        else if (i==0) sets2=QString::number(i*(n)/CPUnum)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" ";
-        else if (i==(CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum)+" "+QString::number(0)+" "+QString::number(m)+" ";
-        QFuture<void> future =QtConcurrent::run(this,&MainWindow::non_local_means_method,in_arr+i,out_arr+i,settings+sets2,true);
+        progressArr[i]=0;
+        if ((i!=0)&&(i!=CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" true ";
+        else if (i==0) sets2=QString::number(i*(n)/CPUnum)+" "+QString::number(((i+1)*n)/CPUnum+5)+" "+QString::number(0)+" "+QString::number(m)+" true ";
+        else if (i==(CPUnum-1)) sets2=QString::number(i*(n)/CPUnum-5)+" "+QString::number(((i+1)*n)/CPUnum)+" "+QString::number(0)+" "+QString::number(m)+" true ";
+        QFuture<void> future =QtConcurrent::run(this,&MainWindow::non_local_means_method,in_arr+i,out_arr+i,settings+sets2,progressArr+i);
         results.append(future);
     }
     QElapsedTimer merge,common;
+    QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: computing."));
     int finish=0;
     merge.start();
     common.start();
+    double paused=0;
     while (finish!=CPUnum){
+        if (isPaused){
+            QElapsedTimer pauseTime;
+            pauseTime.start();
+            while (isPaused){
+                if (!isRendering) isPaused=false;
+                sleep(1);
+            }
+            paused+=(double)pauseTime.elapsed()/1000;
+        }
         finish=0;
         for (int i=0;i<CPUnum;i++) if (results.at(i).isFinished()) finish++;
         if ((merge.elapsed()>30)&&!isPaused){
@@ -738,11 +754,15 @@ void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,Q
                     for (int m1=0;m1<m;m1++)
                         Output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
             QMetaObject::invokeMethod(this,"updatePixel");
+            int percent=0;
+            for (int i=0;i<CPUnum;i++) percent+=progressArr[i];
+            QMetaObject::invokeMethod(this,"updateProgress",Q_ARG(int,percent/CPUnum));
         }
         sleep(5);
     }
     double diff=(double)common.elapsed()/1000;
-    QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff));
+    QMetaObject::invokeMethod(this, "finished",Q_ARG(double,diff-paused));
+    QMetaObject::invokeMethod(this,"updateStatus", Q_ARG(QString, "Status: done."));
 
     delete[] in_arr;
 
@@ -751,9 +771,8 @@ void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,Q
             for (int m1=0;m1<m;m1++)
                 Output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
     QMetaObject::invokeMethod(this,"updatePixel");
-    //for (int i=0; i<CPUnum;i++) out_arr[i].save("out["+QString::number(i)+"].jpg", 0,-1);
-    //Output->save("Output.jpg", 0,-1);
     delete[] out_arr;
+    delete[] progressArr;
 }
 
 void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
