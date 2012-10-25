@@ -1,5 +1,6 @@
 #include <QtGui>
 #include "droparea.h"
+#include <QMimeData>
 
 DropArea::DropArea(QWidget *parent)
     : QLabel(parent)
@@ -45,8 +46,15 @@ void DropArea::dropEvent(QDropEvent *event)
 {
     const QMimeData *mimeData = event->mimeData();
     setText(mimeData->text());
-    qDebug()<<"path= "<<mimeData->text();
-    setPixmap(QPixmap::fromImage(QImage(mimeData->text().remove("file://").simplified())));
+    QString str=mimeData->urls().at(0).toString().simplified();
+#ifdef Q_OS_LINUX
+    str.remove("file://");
+#endif
+#ifdef Q_OS_WIN
+    str.remove("file:///");
+#endif
+    //qDebug()<<"path= "<<str;
+    setPixmap(QPixmap::fromImage(QImage(str)));
     event->acceptProposedAction();
     if(!pixmap()->isNull()){
         setImageSelected(true);
