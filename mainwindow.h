@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "noisewidget.h"
 #include "denoisewidget.h"
+#include "droparea.h"
 #include "RgbMy.h"
 
 namespace Ui {
@@ -21,11 +22,14 @@ public:
     int index;
     noiseWidget* nw;
     denoiseWidget* dw;
+    DropArea *dropArea;
     
 private:
     Ui::MainWindow *ui;
 public slots:
     void on_openButton_clicked();
+    void image_dropped();
+
     void on_noiseButton_clicked();
     void on_noiseDetailsButton_clicked();
     void on_denoiseButton_clicked();

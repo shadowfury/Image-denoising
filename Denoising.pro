@@ -13,7 +13,8 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     noisewidget.cpp \
-    denoisewidget.cpp
+    denoisewidget.cpp \
+    droparea.cpp
 
 HEADERS  += mainwindow.h \
     noisewidget.h \
@@ -21,6 +22,7 @@ HEADERS  += mainwindow.h \
     RgbMy.h \
     matrix.h \
     denoisewidget.h \
-    Denoise.h
+    Denoise.h \
+    droparea.h
 
 FORMS    += mainwindow.ui

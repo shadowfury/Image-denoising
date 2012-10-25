@@ -131,12 +131,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     index=0;
-
     //ui->label->scroll(100,100);
     srand ( time(NULL) );
     qsrand(time(NULL));
     //ui->label_10->setAlignment(Qt::AlignCenter);
     ui->denoisedLabel->setAlignment(Qt::AlignCenter);
+    ui->originalLabel->setAcceptDrops(true);
 
     ui->statusLabel->setAlignment(Qt::AlignCenter);
     ui->commandLinkButton_2->setIcon(QApplication::style()->standardIcon(QStyle::SP_CommandLink).pixmap(128, 128).transformed(QTransform().rotate(180,Qt::YAxis)));
@@ -179,6 +179,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->menuBar->actions().at(0)->menu(),SIGNAL(triggered(QAction*)),SLOT(select_m(QAction*)));
     connect(dw->select,SIGNAL(clicked()),this,SLOT(denoise_select_m()));
     connect(dw->combo,SIGNAL(currentIndexChanged(int)),this,SLOT(activeChanged(int)));
+    connect(ui->originalLabel,SIGNAL(clicked()),this,SLOT(on_openButton_clicked()));
+    connect(ui->originalLabel,SIGNAL(dropped()),this,SLOT(image_dropped()));
 
 
 }
@@ -209,6 +211,7 @@ void MainWindow::on_openButton_clicked()
                                                     tr("Open Image"), "", "Image files ("+formats+")");
 
     if (fileName!=NULL){
+        ui->originalLabel->setImageSelected(true);
         Orig->load(fileName);
         /*Noise->load(fileName);
         Output->load(fileName);
@@ -235,7 +238,32 @@ void MainWindow::on_openButton_clicked()
         ui->originalLabel->repaint();
     }
 }
-
+void MainWindow::image_dropped(){
+    if (ui->originalLabel->isImageSelected()){
+        Orig=new QImage(ui->originalLabel->pixmap()->toImage());
+        /*Noise->load(fileName);
+        Output->load(fileName);
+        Comparison->load(fileName);*/
+        n=Orig->height();
+        m=Orig->width();
+        delete Noise;
+        delete Output;
+        delete Comparison;
+        //delete Orig;
+        Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        Noise->fill(Qt::black);
+        Output = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        Output->fill(Qt::black);
+        Comparison = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        Comparison->fill(Qt::black);
+        //qDebug()<<"toimg"<<m<<"  "<<n;
+        ui->originalLabel->resize(m,n);
+        ui->originalLabel->setPixmap(QPixmap::fromImage(*Orig));
+        ui->originalLabel->setAlignment(Qt::AlignCenter);
+        ui->originalLabel->repaint();
+    }
+}
 
 void MainWindow::on_noiseDetailsButton_clicked()
 {
