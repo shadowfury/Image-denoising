@@ -217,7 +217,8 @@
                <enum>Qt::NoFocus</enum>
               </property>
               <property name="text">
-               <string>drop image here or click to invoke file open dialog</string>
+               <string>drop image here or click to 
+ invoke file open dialog</string>
               </property>
               <property name="scaledContents">
                <bool>false</bool>
