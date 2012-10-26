@@ -158,7 +158,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Comparison = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     Comparison->fill(Qt::transparent);
 
-
+    //ui->originalLabel->setPixmap(QPixmap::fromImage(QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied)));
 
     noiseSettings= new noiseClass();
     denoiseSettings= new denoiseClass();

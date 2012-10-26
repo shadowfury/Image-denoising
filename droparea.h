@@ -22,6 +22,9 @@ public slots:
     bool isImageSelected();
     void setImageSelected(bool sets);
 
+    void saveCurrentImage();
+    void restoreCurrentImage();
+
 signals:
     void changed(const QMimeData *mimeData = 0);
     void clicked();
@@ -42,6 +45,7 @@ protected:
 private:
     QLabel *label;
     bool selected;
+    QImage *current, *next;
 };
 //! [DropArea header part2]
 

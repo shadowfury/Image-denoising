@@ -12,19 +12,58 @@ DropArea::DropArea(QWidget *parent)
     setAutoFillBackground(true);
     setTextFormat(Qt::RichText);
     setImageSelected(false);
-    clear();
+    current= new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    current->fill(Qt::transparent);
+    next= new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    next->fill(Qt::transparent);
+    //clear();
 }
 
 void DropArea::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (!isImageSelected()) setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));
+    //if (!isImageSelected()) setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));
+    if (isImageSelected()) saveCurrentImage();
+
+    const QMimeData *mimeData = event->mimeData();
+    setText(mimeData->text());
+    QUrl str=mimeData->urls().at(0);
+    setPixmap(QPixmap::fromImage(QImage(str.toLocalFile())));
 
     setBackgroundRole(QPalette::Dark);
     event->acceptProposedAction();
     emit changed(event->mimeData());
 }
+void DropArea::dragLeaveEvent(QDragLeaveEvent *event)
+{
+    restoreCurrentImage();
+    if (!isImageSelected()) clear();
+    event->accept();
+}
+void DropArea::dropEvent(QDropEvent *event)
+{
+    const QMimeData *mimeData = event->mimeData();
+    setText(mimeData->text());
+    QUrl str=mimeData->urls().at(0);
+    setPixmap(QPixmap::fromImage(QImage(str.toLocalFile())));
+    event->acceptProposedAction();
+    if(!pixmap()->isNull()){
+        setImageSelected(true);
+        saveCurrentImage();
+        emit dropped();
+    }
+    else{
+        setImageSelected(false);
+        saveCurrentImage();
+        setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));
+    }
+}
+void DropArea::dragMoveEvent(QDragMoveEvent *event)
+{
+    event->acceptProposedAction();
+}
 void DropArea::enterEvent(QEvent *event)
 {
+
     if (!isImageSelected()) setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));
     setBackgroundRole(QPalette::Dark);
     event->accept();
@@ -35,37 +74,6 @@ void DropArea::leaveEvent(QEvent *event)
     clear();
     event->accept();
 
-}
-
-void DropArea::dragMoveEvent(QDragMoveEvent *event)
-{
-    event->acceptProposedAction();
-}
-
-void DropArea::dropEvent(QDropEvent *event)
-{
-    const QMimeData *mimeData = event->mimeData();
-    setText(mimeData->text());
-    QString str=mimeData->urls().at(0).toString().simplified();
-#ifdef Q_OS_LINUX
-    str.remove("file://");
-#endif
-#ifdef Q_OS_WIN
-    str.remove("file:///");
-#endif
-    //qDebug()<<"path= "<<str;
-    setPixmap(QPixmap::fromImage(QImage(str)));
-    event->acceptProposedAction();
-    if(!pixmap()->isNull()){
-        setImageSelected(true);
-        emit dropped();
-    }
-    else setText(tr("<u>Please drop correct image here or click to \n invoke file open dialog</u>"));
-}
-void DropArea::dragLeaveEvent(QDragLeaveEvent *event)
-{
-    clear();
-    event->accept();
 }
 void DropArea::clear()
 {
@@ -82,4 +90,12 @@ void DropArea::setImageSelected(bool sets){
 void DropArea::mousePressEvent(QMouseEvent *event){
     event->accept();
     emit clicked();
+}
+
+void DropArea::saveCurrentImage(){
+    delete current;
+    current= new QImage(pixmap()->toImage());
+}
+void DropArea::restoreCurrentImage(){
+    setPixmap(QPixmap::fromImage(*current));
 }
