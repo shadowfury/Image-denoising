@@ -4,8 +4,10 @@
 #include <QMainWindow>
 #include "noisewidget.h"
 #include "denoisewidget.h"
+#include "blurwidget.h"
 #include "droparea.h"
 #include "RgbMy.h"
+#include "settingwidget.h"
 
 namespace Ui {
 class MainWindow;
@@ -20,8 +22,11 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     int index;
+
+    settingWidget *sw;
     noiseWidget* nw;
     denoiseWidget* dw;
+    blurWidget* bw;
     DropArea *dropArea;
     
 private:
@@ -51,8 +56,11 @@ private slots:
 
     void add_noise_n(QImage *original,QImage *noised,noiseClass* noiseSettings);
     void add_noise(QImage *original,QImage *noised,noiseClass* noiseSettings);
+    QImage blurred(const QImage& image, const QRect& rect, int radius, bool alphaOnly=false);
     int noisePixelplus(int noiseVal,int pixVal,int prob);
     int noisePixelminus(int noiseVal,int pixVal,int prob);
+
+
     void closeEvent(QCloseEvent* ev);
     void select_m(QAction*);
     void denoise_select_m();
@@ -71,6 +79,7 @@ private slots:
 
 
 
+    void on_blurButton_clicked();
 };
 
 #endif // MAINWINDOW_H

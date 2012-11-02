@@ -28,6 +28,8 @@ void DropArea::dragEnterEvent(QDragEnterEvent *event)
     setText(mimeData->text());
     QUrl str=mimeData->urls().at(0);
     setPixmap(QPixmap::fromImage(QImage(str.toLocalFile())));
+    if(pixmap()->isNull()) setText(tr("<u>drop correct image here or click to \n invoke file open dialog</u>"));
+    for (int i=0;i<mimeData->urls().count();i++) qDebug()<< mimeData->urls().at(i);
 
     setBackgroundRole(QPalette::Dark);
     event->acceptProposedAction();
@@ -54,7 +56,7 @@ void DropArea::dropEvent(QDropEvent *event)
     else{
         setImageSelected(false);
         saveCurrentImage();
-        setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));
+        setText(tr("<u>drop correct image here or click to \n invoke file open dialog</u>"));
     }
 }
 void DropArea::dragMoveEvent(QDragMoveEvent *event)

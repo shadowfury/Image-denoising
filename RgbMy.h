@@ -4,6 +4,11 @@ class rgb_my{
 private:
     double red_r,green_g,blue_b;
 public:
+    rgb_my(double red=0,double green=0,double blue=0){
+        red_r=red;
+        green_g=green;
+        blue_b=blue;
+    }
     void setRed(double r){
         red_r=r;
     }

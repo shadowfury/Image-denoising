@@ -14,7 +14,9 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     noisewidget.cpp \
     denoisewidget.cpp \
-    droparea.cpp
+    droparea.cpp \
+    blurwidget.cpp \
+    settingwidget.cpp
 
 HEADERS  += mainwindow.h \
     noisewidget.h \
@@ -23,6 +25,9 @@ HEADERS  += mainwindow.h \
     matrix.h \
     denoisewidget.h \
     Denoise.h \
-    droparea.h
+    droparea.h \
+    blurwidget.h \
+    Blur.h \
+    settingwidget.h
 
 FORMS    += mainwindow.ui

@@ -1,6 +1,5 @@
 #ifndef NOISEWIDGET_H
 #define NOISEWIDGET_H
-#include <QPushButton>
 #include <QLineEdit>
 #include <QHBoxLayout>
 #include <QSlider>
@@ -11,12 +10,11 @@
 #include <QtGui/QWidget>
 
 
-class noiseWidget : public QDialog
+class noiseWidget : public QWidget
 {
     Q_OBJECT
     QGridLayout *layout;      // layout for the centralwidget
     QLineEdit * edit_int_red,*edit_int_green,*edit_int_blue,*edit_pro_red,*edit_pro_green,*edit_pro_blue,*edit_num;
-    QPushButton *select;
     QComboBox *combo;
     QSlider *slideIntensity,*slideProbability;
 

@@ -3,11 +3,10 @@
 
 
 noiseWidget::noiseWidget(QWidget *parent)
-    : QDialog(parent)
+    : QWidget(parent)
 {
     this->setWindowTitle("Noise settings");
     layout = new QGridLayout(this);
-    select=new QPushButton("Select settings",this);
     edit_int_red= new QLineEdit("0",this);
     edit_int_green= new QLineEdit("0",this);
     edit_int_blue= new QLineEdit("0",this);
@@ -47,30 +46,35 @@ noiseWidget::noiseWidget(QWidget *parent)
     QLabel *lbl_pro_blue=new QLabel("blue",this);
     lbl_pro_blue->setAlignment(Qt::AlignCenter);
 
-    layout->addWidget(lbl_type,0,0,1,3);
-    layout->addWidget(combo,1,0,1,3);
-    layout->addWidget(edit_num,2,0,1,3);
-    layout->addWidget(lbl_intensity,3,0,1,3);
-    layout->addWidget(slideIntensity,4,0,1,3);
-    layout->addWidget(lbl_int_red,5,0,1,1);
-    layout->addWidget(lbl_int_green,5,1,1,1);
-    layout->addWidget(lbl_int_blue,5,2,1,1);
-    layout->addWidget(edit_int_red,6,0,1,1);
-    layout->addWidget(edit_int_green,6,1,1,1);
-    layout->addWidget(edit_int_blue,6,2,1,1);
-    layout->addWidget(lbl_probability,7,0,1,3);
-    layout->addWidget(slideProbability,8,0,1,3);
-    layout->addWidget(lbl_pro_red,9,0,1,1);
-    layout->addWidget(lbl_pro_green,9,1,1,1);
-    layout->addWidget(lbl_pro_blue,9,2,1,1);
-    layout->addWidget(edit_pro_red,10,0,1,1);
-    layout->addWidget(edit_pro_green,10,1,1,1);
-    layout->addWidget(edit_pro_blue,10,2,1,1);
-    layout->addWidget(select,11,0,1,3);
+    QLabel *lbl_sets= new QLabel(this);
+    lbl_sets->setTextFormat(Qt::RichText);
+    lbl_sets->setText("<font size=4> Noise settings </font>");
+    lbl_sets->setAlignment(Qt::AlignCenter);
+
+    layout->addWidget(lbl_sets,0,0,1,3);
+    layout->addWidget(lbl_type,1,0,1,3);
+    layout->addWidget(combo,2,0,1,3);
+    layout->addWidget(edit_num,3,0,1,3);
+    layout->addWidget(lbl_intensity,4,0,1,3);
+    layout->addWidget(slideIntensity,5,0,1,3);
+    layout->addWidget(lbl_int_red,6,0,1,1);
+    layout->addWidget(lbl_int_green,6,1,1,1);
+    layout->addWidget(lbl_int_blue,6,2,1,1);
+    layout->addWidget(edit_int_red,7,0,1,1);
+    layout->addWidget(edit_int_green,7,1,1,1);
+    layout->addWidget(edit_int_blue,7,2,1,1);
+    layout->addWidget(lbl_probability,8,0,1,3);
+    layout->addWidget(slideProbability,9,0,1,3);
+    layout->addWidget(lbl_pro_red,10,0,1,1);
+    layout->addWidget(lbl_pro_green,10,1,1,1);
+    layout->addWidget(lbl_pro_blue,10,2,1,1);
+    layout->addWidget(edit_pro_red,11,0,1,1);
+    layout->addWidget(edit_pro_green,11,1,1,1);
+    layout->addWidget(edit_pro_blue,11,2,1,1);
 
     connect(slideIntensity,SIGNAL(valueChanged(int)),this,SLOT(on_slideIntensity_valueChanged(int)));
     connect(slideProbability,SIGNAL(valueChanged(int)),this,SLOT(on_slideProbability_valueChanged(int)));
-    connect(select,SIGNAL(clicked()),this,SLOT(hide()));
+
     connect(combo,SIGNAL(currentIndexChanged(int)),this,SLOT(on_combo_IndexChanged(int)));
 }
 

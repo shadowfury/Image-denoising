@@ -4,18 +4,7 @@ class noiseClass
 {
 public:
     int distribution,int_red, int_green, int_blue,pro_red,pro_green,pro_blue,edit_num;
-    noiseClass(){
-        distribution=0;
-        int_red=0;
-        int_green=0;
-        int_blue=0;
-        pro_red=0;
-        pro_green=0;
-        pro_blue=0;
-        edit_num=0;
-    }
-
-    noiseClass(int dst,int red1,int green1,int blue1, int red2,int green2,int blue2,int edit_num2){
+    noiseClass(int dst=0,int red1=0,int green1=0,int blue1=0, int red2=0,int green2=0,int blue2=0,int edit_num2=0){
         distribution=dst;
         int_red=red1;
         int_green=green1;

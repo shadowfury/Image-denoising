@@ -4,14 +4,7 @@ class denoiseClass
 {
 public:
     int method,patch_size, search_window, pow;
-    denoiseClass(){
-        method=0;
-        patch_size=0;
-        search_window=0;
-        pow=0;
-    }
-
-    denoiseClass(int dst,int ps,int sw,int h){
+    denoiseClass(int dst=0,int ps=0,int sw=0,int h=0){
         method=dst;
         patch_size=ps;
         search_window=sw;
