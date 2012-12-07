@@ -370,6 +370,7 @@ void MainWindow::on_denoiseButton_clicked(){
     if (flag==0){
         ui->progressBar->setValue(0);
         int size=denoiseSettings->patch_size;
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
         QtConcurrent::run(this,&MainWindow::simple_squares_method,size);
     }
     if (flag==1){
@@ -377,6 +378,7 @@ void MainWindow::on_denoiseButton_clicked(){
         ui->progressBar->setValue(0);
         QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+
                 " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" false ";
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
         QFuture<void> future=QtConcurrent::run(this,&MainWindow::non_local_means_method,Noise,Output,settings,pro+0);
     }
     if (flag==2){
@@ -384,6 +386,7 @@ void MainWindow::on_denoiseButton_clicked(){
         int size_m=denoiseSettings->patch_size;
         int size_b=denoiseSettings->search_window;
         int h=denoiseSettings->pow;
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
         QtConcurrent::run(this,&MainWindow::non_local_means_method_fast,size_m,size_b,h);
     }
     if (flag==3){
@@ -391,11 +394,13 @@ void MainWindow::on_denoiseButton_clicked(){
         int size_m=denoiseSettings->patch_size;
         int size_b=denoiseSettings->search_window;
         int h=denoiseSettings->pow;
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
         QtConcurrent::run(this,&MainWindow::Nlm_fast_FFT,size_m,size_b,h);
     }
     if (flag==4){
         ui->progressBar->setValue(0);
         QString settings=" "+QString::number(denoiseSettings->patch_size)+" "+QString::number(denoiseSettings->search_window)+" "+QString::number(denoiseSettings->pow)+" ";
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
         QtConcurrent::run(this,&MainWindow::non_local_means_method_multyThread,Noise,Output,settings);
     }
 }
@@ -786,6 +791,7 @@ void MainWindow::non_local_means_method_multyThread(QImage *inim,QImage *outim,Q
 {
     int CPUnum=getCPUnum()-1;
     int *progressArr=new int[CPUnum];
+    isRendering=true;
     // +QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" ";
     QImage* in_arr=new QImage[CPUnum];
     QImage* out_arr=new QImage[CPUnum];
