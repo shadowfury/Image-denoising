@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-TARGET = Denoising
+TARGET = ./release/Denoising
 TEMPLATE = app
 
 
@@ -31,3 +31,5 @@ HEADERS  += mainwindow.h \
     settingwidget.h
 
 FORMS    += mainwindow.ui
+MOC_DIR += ./release/objects
+OBJECTS_DIR += ./release/objects
