@@ -646,8 +646,10 @@ void MainWindow::simple_squares_method(int size){
 
 }
 
+// single-threaded classic NLM
 void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString settings, int* progress)
 {
+    // reading input settings
     int size_m=settings.section(" ",1,1).toInt(), size_b=settings.section(" ",2,2).toInt(), h=settings.section(" ",3,3).toInt(),
             beginY=settings.section(" ",4,4).toInt(), endY=settings.section(" ",5,5).toInt(),beginX=settings.section(" ",6,6).toInt(),
             endX=settings.section(" ",7,7).toInt();
@@ -665,13 +667,18 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
     int m_size_b=(size_b-1)/2;
     //int c=0;
     QColor p,q,fin,out,noize;
-    rgb_my Weight[size_b][size_b],z;
+    // weight array and normalizing factor z
+    rgb_my Weight[size_b][size_b],z;    
+    // main cycle (begin with Y)
     for (int y=beginY;y<endY;y++){
+        // visual updates of progress
         if(!silent) QMetaObject::invokeMethod(this,"updateProgress", Q_ARG(int, ((y-beginY)*100)/(endY-beginY-1)));
         if (silent){
             *progress=((y-beginY)*100)/(endY-beginY-1);
         }
+        // sub cycle for X
         for (int x=beginX;x<endX;x++){
+            // rendering and stop/pause processing
             if (isPaused){
                 QElapsedTimer pauseTime;
                 pauseTime.start();
@@ -687,26 +694,35 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
                 //if(silent)qDebug()<<"finished"<<diff-paused;
                 return;
             }
+            // begin of algorithm; zeroing Z for every pixel
             z.setBlue(0);
             z.setGreen(0);
             z.setRed(0);
+            // cycles for finding weights for pixel, going through weight array
             for (int i=0;i<size_b;i++){
                 for(int j=0;j<size_b;j++){
+                    // Zeroing it out
                     Weight[i][j].setRed(0);
                     Weight[i][j].setBlue(0);
                     Weight[i][j].setGreen(0);
+                    // cycle to find value in weight array (looping through neighbourhood)
                     for(int a=0;a<size_m;a++){
                         for(int b=0;b<size_m;b++){
                             //if((x-m_size+a<m)&&(x-m_size+a>=0)&&(y-m_size+b<n)&&(y-m_size+b>-0)){
                                 //if ((x-m_size_b-m_size+a+i<m)&&(x-m_size_b-m_size+a+i>=0)&&(y-m_size_b-m_size+b+j<n)&&(y-m_size_b-m_size+b+j>=0)){
+
                             int x_m=0,y_m=0,x_f=0,y_f=0,x_ff=0,y_ff=0;
+
+                            // measures to ensure, that pixel is not out of bounds of neighbourhood window (surrounding current pixel)
 
                             if ((x-m_size+a>=endX)||(x-m_size+a<beginX)) x_m=x+m_size-a;
                             else x_m=x-m_size+a;
                             if ((y-m_size+b>=endY)||(y-m_size+b<beginY)) y_m=y+m_size-b;
                             else y_m=y-m_size+b;
                             p=inim->pixel(x_m,y_m);
+                            // p - pixel - in the neighbourhood of current pixel
 
+                            // measures to ensure, that pixel is not out of bounds of weight window and neighbourhood (surrounding current pixel in weight window)
                             if ((x-m_size_b+i>=endX)||(x-m_size_b+i<beginX)) x_f=x+m_size_b-i;
                             else x_f=x-m_size_b+i;
                             if ((y-m_size_b+j>=endY)||(y-m_size_b+j<beginY)) y_f=y+m_size_b-j;
@@ -718,15 +734,18 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
                             else y_ff=y_f-m_size+b;
 
                             q=inim->pixel(x_ff,y_ff);//*/
+                            // q - pixel - in the neighbourhood of current pixel in weight window
+                            // weight value equals sum of all squared differences of neighbourhood pixels
                             Weight[i][j].setRed(Weight[i][j].red()+pow(p.red()-q.red(),2));
                             Weight[i][j].setBlue(Weight[i][j].blue()+pow(p.blue()-q.blue(),2));
                             Weight[i][j].setGreen(Weight[i][j].green()+pow(p.green()-q.green(),2));
                         }
                     }
+                    // getting en exponent of current pixel in weight matrix and divide it by squared h ( denoising power)
                     Weight[i][j].setRed(exp(-Weight[i][j].red()/pow(h,2)));
                     Weight[i][j].setBlue(exp(-Weight[i][j].blue()/pow(h,2)));
                     Weight[i][j].setGreen(exp(-Weight[i][j].green()/pow(h,2)));
-
+                    // counting normalizing factor z
                     z.setRed(z.red()+Weight[i][j].red());
                     z.setBlue(z.blue()+Weight[i][j].blue());
                     z.setGreen(z.green()+Weight[i][j].green());
@@ -738,7 +757,7 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
             fin.setBlue(0);
             fin.setGreen(0);
             outim->setPixel(x,y,fin.rgb());
-
+            //cycle for counting final value of output pixel
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
                     //if ((x+ii-m_size_b<m)&&(x+ii-m_size_b>=0)&&(y+jj-m_size_b<n)&&(y+jj-m_size_b>=0)){
@@ -765,6 +784,7 @@ void MainWindow::non_local_means_method(QImage *inim,QImage *outim,QString setti
 
                 }
             }
+            // updating image on the screen
             if ((!silent)&&(update.elapsed()>30)){
 
                 update.restart();
@@ -862,6 +882,8 @@ void MainWindow::non_local_means_method_fast(int size_m,int size_b,int h)
 
     if ((getAvailableSystemMemory()+getProcMemory())<((long)sizeof(rgb_my)*m*n*size_b*size_b)/(1024*1024)){
         QMetaObject::invokeMethod(this,"popMessageBox", Q_ARG(int,m), Q_ARG(int,n), Q_ARG(int,size_b));
+        isRendering=false;
+        QMetaObject::invokeMethod(this, "finished",Q_ARG(double,0));
         return;
     }
     QMetaObject::invokeMethod(this,"iconPause");

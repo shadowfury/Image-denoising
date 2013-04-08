@@ -60,7 +60,7 @@ void denoiseWidget::on_combo_IndexChanged(int ind){
         edit_sw->setEnabled(false);
         edit_pow->setEnabled(false);
     }
-    else if ((ind==1)||(ind==2)||(ind==3)){
+    else if ((ind==1)||(ind==2)||(ind==3)||(ind==4)){
         edit_ps->setEnabled(true);
         edit_sw->setEnabled(true);
         edit_pow->setEnabled(true);
