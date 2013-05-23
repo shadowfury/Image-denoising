@@ -14,8 +14,6 @@ denoiseWidget::denoiseWidget(QWidget *parent)
 
 
     combo= new QComboBox(this);
-    combo->addItem("Uniform distribution");
-    combo->addItem("Normal distribution");
 
     QLabel *lbl_settings= new QLabel("Denoising method settings",this);
     lbl_settings->setAlignment(Qt::AlignCenter);
@@ -48,7 +46,7 @@ denoiseWidget::denoiseWidget(QWidget *parent)
 
 denoiseClass* denoiseWidget::getSettings()
 {
-    denoiseClass* denoise= new denoiseClass(combo->currentIndex(),edit_ps->text().toInt(),edit_sw->text().toInt(),edit_pow->text().toInt());
+    denoiseClass* denoise= new denoiseClass(denoiseClass::method(combo->currentIndex()),edit_ps->text().toInt(),edit_sw->text().toInt(),edit_pow->text().toInt());
     return denoise;
 }
 void denoiseWidget::hide(){

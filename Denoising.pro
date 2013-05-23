@@ -10,26 +10,28 @@ TARGET = ./release/Denoising
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    noisewidget.cpp \
-    denoisewidget.cpp \
-    droparea.cpp \
-    blurwidget.cpp \
-    settingwidget.cpp
+SOURCES += src/main.cpp\
+        src/mainwindow.cpp \
+    src/denoise/noisewidget.cpp \
+    src/denoise/denoisewidget.cpp \
+    src/droparea.cpp \
+    src/blur/blurwidget.cpp \
+    src/settingwidget.cpp \
+    src/denoise/qdenoiser.cpp
 
-HEADERS  += mainwindow.h \
-    noisewidget.h \
-    Noise.h \
-    RgbMy.h \
-    matrix.h \
-    denoisewidget.h \
-    Denoise.h \
-    droparea.h \
-    blurwidget.h \
-    Blur.h \
-    settingwidget.h
+HEADERS  += src/mainwindow.h \
+    src/denoise/noisewidget.h \
+    src/denoise/Noise.h \
+    src/RgbMy.h \
+    src/matrix.h \
+    src/denoise/denoisewidget.h \
+    src/denoise/Denoise.h \
+    src/droparea.h \
+    src/blur/blurwidget.h \
+    src/blur/Blur.h \
+    src/settingwidget.h \
+    src/denoise/qdenoiser.h
 
-FORMS    += mainwindow.ui
+FORMS    += src/mainwindow.ui
 MOC_DIR += ./release/objects
 OBJECTS_DIR += ./release/objects

@@ -2,9 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "noisewidget.h"
-#include "denoisewidget.h"
-#include "blurwidget.h"
+#include "denoise/noisewidget.h"
+#include "denoise/denoisewidget.h"
+#include "denoise/qdenoiser.h"
+#include "blur/blurwidget.h"
 #include "droparea.h"
 #include "RgbMy.h"
 #include "settingwidget.h"
@@ -44,12 +45,8 @@ public slots:
     void on_pushButton_5_clicked();
     void on_pushButton_6_clicked();
 
-    void simple_squares_method(int size);
-    void non_local_means_method(QImage *inim,QImage *outim,QString settings, int* progress);
-    void non_local_means_method_multyThread(QImage *inim,QImage *outim,QString settings);
-    void non_local_means_method_fast(int size_m,int size_b,int h);
-    void Nlm_fast_FFT(int size_m,int size_b,int h);
 
+    void timeout_slot();
 
 
 private slots:
@@ -67,10 +64,7 @@ private slots:
     void activeChanged(int comboIndex);
 
     void finished(double diff);
-    void updateStatus(QString status);
-    void updateProgress(int progress);
-    void updatePixel();
-    void popMessageBox(int m1,int n1,int size_b);
+
     void iconPause();
 
 
