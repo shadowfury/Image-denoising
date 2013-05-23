@@ -65,7 +65,6 @@ private slots:
 
     void finished(double diff);
 
-    void iconPause();
 
 
 

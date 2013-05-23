@@ -285,12 +285,11 @@ void MainWindow::on_denoiseButton_clicked(){
         }
     }
 
-    if (!Output->isNull()) delete Output;
-    Output = new QImage(*Noise);
-    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+
 
 
 }
+// Cancel button and timeout functions
 
 void MainWindow::on_cancelButton_clicked()
 {
@@ -298,6 +297,10 @@ void MainWindow::on_cancelButton_clicked()
     isPaused=false;
     denoiser->cancelRender();
     ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
+    if (!Output->isNull()) delete Output;
+    Output = new QImage(*denoiser->getImage());
+    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+
 }
 
 void MainWindow::timeout_slot(){
@@ -311,13 +314,14 @@ void MainWindow::timeout_slot(){
         tmp->stop();
         isRendering=false;
         ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
+
+        if (!Output->isNull()) delete Output;
+        Output = new QImage(*denoiser->getImage());
+        ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+
     }
 
 }
-
-
-
-
 
 
 //saving files to images and csv
@@ -460,9 +464,6 @@ void MainWindow::add_noise_n(QImage *original,QImage *noised,noiseClass* noiseSe
     }//*/
 }
 
-
-
-
 void MainWindow::finished(double diff)
 {
     isRendering=false;
@@ -471,14 +472,6 @@ void MainWindow::finished(double diff)
     ui->denoisedLabel->repaint();
     ui->elapsedLabel->setText("Time elapsed:"+QString::number(diff)+" sec.");
 }
-
-
-
-void MainWindow::iconPause(){
-    ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
-}
-
-
 
 
 QImage MainWindow::blurred(const QImage& image, const QRect& rect, int radius, bool alphaOnly)
