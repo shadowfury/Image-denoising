@@ -254,10 +254,6 @@ void MainWindow::on_blurButton_clicked(){
 
 //invokes removing noise from single image
 void MainWindow::on_denoiseButton_clicked(){
-
-
-    // pause-resume-cancel-finish mechanizm needs testing,
-
     if (!isRendering){
         delete denoiseSettings;
         denoiseSettings=dw->getSettings();
@@ -299,6 +295,7 @@ void MainWindow::on_denoiseButton_clicked(){
 void MainWindow::on_cancelButton_clicked()
 {
     isRendering=false;
+    isPaused=false;
     denoiser->cancelRender();
     ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
 }

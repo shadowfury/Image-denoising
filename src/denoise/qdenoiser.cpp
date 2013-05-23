@@ -419,7 +419,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* progress)
 
     }
     setStatus("Status: done.");
-    setRendering(false);
+    if (!silent) setRendering(false);
 
 /*
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
