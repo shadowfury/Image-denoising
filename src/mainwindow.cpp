@@ -27,14 +27,7 @@ bool isPaused=false,isRendering=false;
 float RandNorm( int num );
 
 
-class Sleeper : public QThread {
-public:
-    static void msleep(unsigned long v) { QThread::msleep(v); }
-};
 
-void sleep(int ms) {
-    Sleeper::msleep(ms);
-}
 void MainWindow::closeEvent(QCloseEvent* ev)
 {
    dw->setVisible(false);
@@ -268,12 +261,10 @@ void MainWindow::on_denoiseButton_clicked(){
     if (!isRendering){
         delete denoiseSettings;
         denoiseSettings=dw->getSettings();
-        flag=dw->curr_ind;
-        this->setWindowTitle("Denoising with "+ui->menuBar->actions().at(0)->menu()->actions().at(flag)->text()+".");
+        setWindowTitle("Denoising with "+ui->menuBar->actions().at(0)->menu()->actions().at(dw->curr_ind)->text()+".");
         denoiser=new QDenoiser(Noise,denoiseSettings);
-        //ui->denoisedLabel->setPixmap(QPixmap::fromImage(*denoiser->getImage()));
-        //denoiser->startRender();
-        QtConcurrent::run(denoiser,&QDenoiser::startRender);
+        denoiser->startRender();
+        //QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
         timer->start(30);

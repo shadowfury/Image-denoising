@@ -86,6 +86,15 @@ long getCPUnum(){
 
 #endif
 
+class Sleeper : public QThread {
+public:
+    static void msleep(unsigned long v) { QThread::msleep(v); }
+};
+
+void sleep(int ms) {
+    Sleeper::msleep(ms);
+}
+
 QDenoiser::QDenoiser()
 {
     setRendering(false);
