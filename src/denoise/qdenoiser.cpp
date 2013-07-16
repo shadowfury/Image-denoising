@@ -1,7 +1,4 @@
 #include "qdenoiser.h"
-#include <QLabel>
-#include <QWidget>
-#include <QHBoxLayout>
 
 #ifdef Q_OS_WIN
 #define _WIN32_WINNT  0x0501
@@ -97,6 +94,10 @@ void sleep(int ms) {
 
 QDenoiser::QDenoiser()
 {
+    input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    input->fill(Qt::transparent);
+    output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    output->fill(Qt::transparent);
     setRendering(false);
     setPaused(false);
     setProgress(0);
@@ -104,8 +105,12 @@ QDenoiser::QDenoiser()
     setDenoisingMethod(denoiseClass::NLM_fast_FFT);
 }
 
-QDenoiser::QDenoiser(QImage* input,denoiseClass* settings){
-    setImage(input);
+QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
+    input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    input->fill(Qt::transparent);
+    output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
+    output->fill(Qt::transparent);
+    setImage(in);
     setSettings(settings);
     setRendering(false);
     setPaused(false);
@@ -143,19 +148,10 @@ void QDenoiser::setPaused(bool state){
 }
 
 void QDenoiser::setImage(QImage* inim){
+    delete input;
+    delete output;
     input= new QImage(*inim);
     output=new QImage(*inim);
-
-    /*QWidget *wg=new QWidget();
-    QVBoxLayout *lay=new QVBoxLayout(wg);
-    QLabel *inputLabel=new QLabel(wg);
-    QLabel *outputLabel=new QLabel(wg);
-    inputLabel->setPixmap(QPixmap::fromImage(*input));
-    outputLabel->setPixmap(QPixmap::fromImage(*output));
-    lay->addWidget(inputLabel);
-    lay->addWidget(outputLabel);
-    wg->show();//*/
-
     n=input->height();
     m=input->width();
 }
@@ -210,10 +206,6 @@ void QDenoiser::startRender(){
         QString settings=" "+QString::number(getSettings()->patch_size)+" "+QString::number(getSettings()->search_window)+" "+QString::number(getSettings()->pow)+" ";
         QtConcurrent::run(this,&QDenoiser::NLM_multyThread,input,output,settings);
     }
-
-
-    //*/
-
 
 }
 
@@ -307,9 +299,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* progress)
     for (int y=beginY;y<endY;y++){
         // visual updates of progress
         if(!silent) setProgress(((y-beginY)*100)/(endY-beginY-1));
-        if (silent){
-            *progress=((y-beginY)*100)/(endY-beginY-1);
-        }
+        else *progress=((y-beginY)*100)/(endY-beginY-1);
         // sub cycle for X
         for (int x=beginX;x<endX;x++){
             // rendering and stop/pause processing
@@ -702,8 +692,6 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
     setStatus("Status: creating 4d-array.");
     setProgress(0);
 
-
-
     rgb_my** Sdx=new rgb_my*[m];
     for (int i=0;i<m;i++){
         setProgress((i*100)/(m-1));
@@ -819,7 +807,7 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
                     square_n.setGreen(Sdx[x_p][y_p].green()+Sdx[x_m][y_m].green()-Sdx[x_m][y_p].green()-Sdx[x_p][y_m].green());
 
 
-
+                    // fft here
                     Weight[i][j].setRed(square_s.red()+square_n.red()-2*sqrt(square_s.red())*sqrt(square_n.red()));
                     Weight[i][j].setBlue(square_s.blue()+square_n.blue()-2*sqrt(square_s.blue())*sqrt(square_n.blue()));
                     Weight[i][j].setGreen(square_s.green()+square_n.green()-2*sqrt(square_s.green())*sqrt(square_n.green()));//*/

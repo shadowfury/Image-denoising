@@ -28,6 +28,7 @@ float RandNorm( int num );
 
 
 
+
 void MainWindow::closeEvent(QCloseEvent* ev)
 {
    dw->setVisible(false);
@@ -42,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // fftwnd_plan fftw2d_create_plan(int nx, int ny, fftw_direction dir, int flags);
 
 
     index=0;
@@ -167,6 +170,7 @@ void MainWindow::on_openButton_clicked()
 
 void MainWindow::image_dropped(){
     if (ui->originalLabel->isImageSelected()){
+        delete Orig;
         Orig=new QImage(ui->originalLabel->pixmap()->toImage());
         /*Noise->load(fileName);
         Output->load(fileName);
@@ -305,11 +309,14 @@ void MainWindow::on_cancelButton_clicked()
 
 void MainWindow::timeout_slot(){
     //qDebug()<<denoiser->getProgress();
-    if (ui->tabWidget->currentIndex()==2) ui->denoisedLabel->setPixmap(QPixmap::fromImage(*denoiser->getImage()));
+    if (!Output->isNull()) delete Output;
+    Output = new QImage(*denoiser->getImage());
+    if (ui->tabWidget->currentIndex()==2) ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+
     ui->progressBar->setValue(denoiser->getProgress());
     ui->statusLabel->setText(denoiser->getStatus());
 
-    if (denoiser->getProgress()==100){
+    if (!denoiser->isRendering()){
         QTimer *tmp=(QTimer*)sender();
         tmp->stop();
         isRendering=false;
