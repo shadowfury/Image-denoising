@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tabWidget->removeTab(4);
 
 
-    connect(ui->menuBar->actions().at(0)->menu(),SIGNAL(triggered(QAction*)),SLOT(select_m(QAction*)));
+    connect(ui->menuBar->actions().at(0)->menu(),SIGNAL(triggered(QAction*)),this,SLOT(select_m(QAction*)));
     connect(dw->select,SIGNAL(clicked()),this,SLOT(denoise_select_m()));
     connect(dw->combo,SIGNAL(currentIndexChanged(int)),this,SLOT(activeChanged(int)));
 
@@ -304,6 +304,7 @@ void MainWindow::on_cancelButton_clicked()
     if (!Output->isNull()) delete Output;
     Output = new QImage(*denoiser->getImage());
     ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+    ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
 
 }
 
@@ -311,7 +312,11 @@ void MainWindow::timeout_slot(){
     //qDebug()<<denoiser->getProgress();
     if (!Output->isNull()) delete Output;
     Output = new QImage(*denoiser->getImage());
-    if (ui->tabWidget->currentIndex()==2) ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+    ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
+    if (ui->tabWidget->currentIndex()==2){
+        ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+        //qDebug()<<denoiser->getTimeSpent();
+    }
 
     ui->progressBar->setValue(denoiser->getProgress());
     ui->statusLabel->setText(denoiser->getStatus());
@@ -325,7 +330,7 @@ void MainWindow::timeout_slot(){
         if (!Output->isNull()) delete Output;
         Output = new QImage(*denoiser->getImage());
         ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
-
+        ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
     }
 
 }
