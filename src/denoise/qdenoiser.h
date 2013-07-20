@@ -47,6 +47,10 @@ private slots:
     void setTimeSpent(double ms=0.0);
     void updateTimer();
 
+signals:
+    void stoptimer();
+    void starttimer();
+
 public slots:
     /* setter functions, set corresponding private variables */
     void setRendering(bool state);

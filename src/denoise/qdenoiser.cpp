@@ -98,6 +98,8 @@ QDenoiser::QDenoiser()
     connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
     computingTime->setSingleShot(false);
     computingTime->setInterval(25);
+    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
+    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
     setTimeSpent(0.0);
     input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     input->fill(Qt::transparent);
@@ -115,6 +117,8 @@ QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
     connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
     computingTime->setSingleShot(false);
     computingTime->setInterval(25);
+    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
+    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
     setTimeSpent(0.0);
     input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     input->fill(Qt::transparent);
@@ -253,9 +257,9 @@ void QDenoiser::popMessageBox(int m1,int n1,int size_b)
 void QDenoiser::simple_squares(int size){
     setRendering(true);
     setStatus("Status: computing.");    
-    computingTime->stop();
+    emit stoptimer();
     setTimeSpent(0.0);
-    computingTime->start();
+    emit starttimer();
     int m_size=(size-1)/2;
     QColor q;
     int c,z_red,z_blue,z_green;
@@ -263,16 +267,16 @@ void QDenoiser::simple_squares(int size){
         setProgress((y*100)/(n-1));
         for (int x=0;x<m;x++){
             if (isPaused()){
-                computingTime->stop();
+                emit stoptimer();
                 while (isPaused()){
                     if (!isRendering()) setPaused(false);
                     sleep(1);
                 }
-                computingTime->start();
+                emit starttimer();
             }
             if (!isRendering()){
                 setRendering(false);
-                computingTime->stop();
+                emit stoptimer();
                 return;
             }
             z_red=0;
@@ -297,7 +301,7 @@ void QDenoiser::simple_squares(int size){
 
         }
     }
-    computingTime->stop();
+    emit stoptimer();
     setStatus("Status: done.");
     setRendering(false);
 
@@ -315,9 +319,9 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
     setRendering(true);
     setStatus("Status: computing.");
     //if(!silent) QMetaObject::invokeMethod(this,"iconPause");
-    if(!silent)computingTime->stop();
+    if(!silent)emit stoptimer();
     setTimeSpent(0.0);
-    if(!silent)computingTime->start();
+    if(!silent)emit starttimer();
 
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
@@ -334,16 +338,16 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
         for (int x=beginX;x<endX;x++){
             // rendering and stop/pause processing
             if (isPaused()){
-                if(!silent)computingTime->stop();
+                if(!silent)emit stoptimer();
                 while (isPaused()){
                     if (!isRendering()) setPaused(false);
                     sleep(1);
                 }
-                if(!silent)computingTime->start();
+                if(!silent)emit starttimer();
             }
             if (!isRendering()){
                 setRendering(false);
-                if(!silent)computingTime->stop();
+                if(!silent)emit stoptimer();
                 return;
             }
             // begin of algorithm; zeroing Z for every pixel
@@ -442,7 +446,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
 
     }
     setStatus("Status: done.");
-    if(!silent)computingTime->stop();
+    if(!silent)emit stoptimer();
     if (!silent) setRendering(false);
 
 /*
@@ -454,9 +458,9 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
 
 void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
 {
-    computingTime->stop();
+    emit stoptimer();
     setTimeSpent(0.0);
-    computingTime->start();
+    emit starttimer();
     int CPUnum=getCPUnum()-1;
     int *progressArr=new int[CPUnum];
     setRendering(true);
@@ -483,16 +487,16 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
 
     while (finish!=CPUnum){
         if (isPaused()){
-            computingTime->stop();
+            emit stoptimer();
             while (isPaused()){
                 if (!isRendering()) setPaused(false);
                 sleep(1);
             }
-            computingTime->start();
+            emit starttimer();
         }
         if (!isRendering()){
             setRendering(false);
-            computingTime->stop();
+            emit stoptimer();
             return;
         }
         finish=0;
@@ -521,16 +525,16 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
     //QMetaObject::invokeMethod(this,"updatePixel");
     delete[] out_arr;
     delete[] progressArr;
-    computingTime->stop();
+    emit stoptimer();
     setRendering(false);
 }
 
 void QDenoiser::NLM_fast(int size_m,int size_b,int h)
 {
     setRendering(true);
-    computingTime->stop();
+    emit stoptimer();
     setTimeSpent(0.0);
-    computingTime->start();
+    emit starttimer();
 
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
@@ -624,12 +628,12 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
         setProgress((y*100)/(n-1));
         for (int x=0;x<m;x++){
             if (isPaused()){
-                computingTime->stop();
+                emit stoptimer();
                 while (isPaused()){
                     if (!isRendering()) setPaused(false);
                     sleep(1);
                 }
-                computingTime->start();
+                emit starttimer();
             }
             if (!isRendering()){
                 setRendering(false);
@@ -647,7 +651,7 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
 
                 }
                 delete[] Sdx;//*/
-                computingTime->stop();
+                emit stoptimer();
                 return;
             }
             //setting normalizing constant to zero
@@ -733,7 +737,7 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
     delete[] Sdx;//*/
 
     setStatus("Status: done.");
-    computingTime->stop();
+    emit stoptimer();
     setRendering(false);
 
 }
@@ -741,9 +745,9 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
 
 void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
 {
-    computingTime->stop();
+    emit stoptimer();
     setTimeSpent(0.0);
-    computingTime->start();
+    emit starttimer();
     setRendering(true);
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
@@ -806,12 +810,12 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
         setProgress((y*100)/(n-1));
         for (int x=0;x<m;x++){
             if (isPaused()){
-                computingTime->stop();
+                emit stoptimer();
                 while (isPaused()){
                     if (!isRendering()) setPaused(false);
                     sleep(1);
                 }
-                computingTime->start();
+                emit starttimer();
             }
             if (!isRendering()){
                 setRendering(false);
@@ -821,7 +825,7 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
                     delete[] Sdx[i];
                 }
                 delete[] Sdx;//*/
-                computingTime->stop();
+                emit stoptimer();
                 return;
             }
             //перед кожною ітерацією обнулення Z
@@ -938,7 +942,7 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
 
     }
     delete[] Sdx;//*/
-    computingTime->stop();
+    emit stoptimer();
     setStatus("Status: done.");
     setRendering(false);
 }
