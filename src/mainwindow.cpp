@@ -302,8 +302,9 @@ void MainWindow::on_cancelButton_clicked()
     denoiser->cancelRender();
     ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
     if (!Output->isNull()) delete Output;
-    Output = new QImage(*denoiser->getImage());
-    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+    Output = new QImage(*denoiser->getImage()); // updating denoised image tab
+    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output)); // updating comparison tab
+    on_pushButton_6_clicked();
     ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
 
 }
@@ -313,10 +314,8 @@ void MainWindow::timeout_slot(){
     if (!Output->isNull()) delete Output;
     Output = new QImage(*denoiser->getImage());
     ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
-    if (ui->tabWidget->currentIndex()==2){
-        ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
-        //qDebug()<<denoiser->getTimeSpent();
-    }
+    if (ui->tabWidget->currentIndex()==2) ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output)); // updating denoised image tab
+    if (ui->tabWidget->currentIndex()==3) on_pushButton_6_clicked(); // updating comparison tab
 
     ui->progressBar->setValue(denoiser->getProgress());
     ui->statusLabel->setText(denoiser->getStatus());
