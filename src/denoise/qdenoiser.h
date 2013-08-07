@@ -4,15 +4,21 @@
 #include "src/RgbMy.h"
 #include <math.h>
 #include <QImage>
-#include <QObject>
+#include <QColor>
+
 #include <QMessageBox>
-#include <QFuture>
-#include <QtConcurrentRun>
 #include <QFile>
+#include <QTextStream>
+
 #include <QElapsedTimer>
 #include <QTimer>
-#include <QTextStream>
-#include <QColor>
+
+#include <QObject>
+#include <QFuture>
+#include <QtConcurrentRun>
+
+#include <QMutex>
+#include <QMutexLocker>
 
 class QDenoiser: public QObject
 {
@@ -27,12 +33,13 @@ private:
     int progress,m,n;                       // private variables, holds progress, and input/output images size
     double time_computing;                  // time spent computing variable
     denoiseClass::method denoisingMethod;   // holds what method is selected
-
-    QTimer *computingTime;
+    QTimer *computingTime;                  // timer, counts computing time
+    QMutex mutex;                           // to make class more thread safe
 
 public:
     QDenoiser();                            // default constructor
     QDenoiser(QImage* in,denoiseClass* settings);
+    ~QDenoiser();
 private slots:
     /* denoising methods */
     void simple_squares(int size);

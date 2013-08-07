@@ -263,11 +263,12 @@ void MainWindow::on_denoiseButton_clicked(){
         denoiseSettings=dw->getSettings();
         setWindowTitle("Denoising with "+ui->menuBar->actions().at(0)->menu()->actions().at(dw->curr_ind)->text()+".");
         denoiser=new QDenoiser(Noise,denoiseSettings);
-        denoiser->startRender();
-        //QtConcurrent::run(denoiser,&QDenoiser::startRender);
+
+        //denoiser->startRender();
+        QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
-        timer->start(30);
+        timer->start(150);
         timer->setSingleShot(false);
 
         isRendering=true;//
@@ -302,21 +303,20 @@ void MainWindow::on_cancelButton_clicked()
     denoiser->cancelRender();
     ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
     if (!Output->isNull()) delete Output;
-    Output = new QImage(*denoiser->getImage()); // updating denoised image tab
-    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output)); // updating comparison tab
-    on_pushButton_6_clicked();
+    Output = new QImage(*denoiser->getImage());
+    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output)); // updating denoised image tab
+    on_pushButton_6_clicked(); // updating comparison tab
     ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
 
 }
 
 void MainWindow::timeout_slot(){
-    //qDebug()<<denoiser->getProgress();
     if (!Output->isNull()) delete Output;
     Output = new QImage(*denoiser->getImage());
-    ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
     if (ui->tabWidget->currentIndex()==2) ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output)); // updating denoised image tab
     if (ui->tabWidget->currentIndex()==3) on_pushButton_6_clicked(); // updating comparison tab
 
+    ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
     ui->progressBar->setValue(denoiser->getProgress());
     ui->statusLabel->setText(denoiser->getStatus());
 
@@ -324,14 +324,15 @@ void MainWindow::timeout_slot(){
         QTimer *tmp=(QTimer*)sender();
         tmp->stop();
         isRendering=false;
-        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
+        isPaused=false;
 
+        ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
         if (!Output->isNull()) delete Output;
         Output = new QImage(*denoiser->getImage());
         ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
+        on_pushButton_6_clicked(); // updating comparison tab
         ui->elapsedLabel->setText("Time elapsed: "+QString::number(denoiser->getTimeSpent(),'f',3));
     }
-
 }
 
 
@@ -362,17 +363,17 @@ void MainWindow::on_pushButton_6_clicked()
             z.setBlue(abs(ori.blue()-out.blue()));
             z.setGreen(abs(ori.green()-out.green()));
             Comparison->setPixel(i,j,z.rgb());
-            error[0]=pow(ori.red()-out.red(),2);
-            error[1]=pow(ori.green()-out.green(),2);
-            error[2]=pow(ori.blue()-out.blue(),2);
+            error[0]=+pow(z.red(),2);
+            error[1]=+pow(z.green(),2);
+            error[2]=+pow(z.blue(),2);
         }
     }
     error[0]=error[0]/(m*n);
     error[1]=error[1]/(m*n);
     error[2]=error[2]/(m*n);
-    ui->lineEdit_20->setText(QString::number(error[0],'g',4));
-    ui->lineEdit_19->setText(QString::number(error[1],'g',4));
-    ui->lineEdit_18->setText(QString::number(error[2],'g',4));
+    //ui->lineEdit_20->setText(QString::number(error[0],'g',4));
+    //ui->lineEdit_19->setText(QString::number(error[1],'g',4));
+    //ui->lineEdit_18->setText(QString::number(error[2],'g',4));
 
     ui->label_9->setAlignment(Qt::AlignCenter);
     ui->label_9->setPixmap(QPixmap::fromImage(*Comparison));

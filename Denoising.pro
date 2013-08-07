@@ -35,5 +35,6 @@ HEADERS  += src/mainwindow.h \
 FORMS    += src/mainwindow.ui
 MOC_DIR += ./release/objects
 OBJECTS_DIR += ./release/objects
+UI_DIR +=./release/objects
 
 #LIBS += -L"$$_PRO_FILE_PWD_/fftw3/.libs/" -lfftw3

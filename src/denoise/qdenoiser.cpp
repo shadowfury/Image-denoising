@@ -105,6 +105,7 @@ QDenoiser::QDenoiser()
     input->fill(Qt::transparent);
     output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     output->fill(Qt::transparent);
+    setSettings(new denoiseClass());
     setRendering(false);
     setPaused(false);
     setProgress(0);
@@ -132,36 +133,40 @@ QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
     setStatus(0);
     setDenoisingMethod(settings->denoisingMethod);
 }
+QDenoiser::~QDenoiser(){
+    delete input;
+    delete output;
+    delete computingTime;
+    delete sets;
+}
 
 void QDenoiser::setSettings(denoiseClass* settings){
+    QMutexLocker lock(&mutex);
     sets=settings;
 }
-
-denoiseClass* QDenoiser::getSettings(){
-    return sets;
-}
 void QDenoiser::setDenoisingMethod(denoiseClass::method val){
+    QMutexLocker lock(&mutex);
     denoisingMethod=val;
 }
-denoiseClass::method QDenoiser::getDenoisingMethod(){
-    return denoisingMethod;
-}
-
-bool QDenoiser::isRendering(){
-    return rendering;
-}
-bool QDenoiser::isPaused(){
-    return paused;
-}
 void QDenoiser::setRendering(bool state){
+    QMutexLocker lock(&mutex);
     rendering=state;
 }
 
 void QDenoiser::setPaused(bool state){
+    QMutexLocker lock(&mutex);
     paused=state;
 }
-
+void QDenoiser::setProgress(int prog){
+    QMutexLocker lock(&mutex);
+    progress=prog;
+}
+void QDenoiser::setStatus(QString status){
+    QMutexLocker lock(&mutex);
+    _status=status;
+}
 void QDenoiser::setImage(QImage* inim){
+    QMutexLocker lock(&mutex);
     delete input;
     delete output;
     input= new QImage(*inim);
@@ -169,35 +174,47 @@ void QDenoiser::setImage(QImage* inim){
     n=input->height();
     m=input->width();
 }
-
-QImage* QDenoiser::getImage(){
-    return output;
-}
-
-int QDenoiser::getProgress(){
-    return progress;
-}
-void QDenoiser::setProgress(int prog){
-    progress=prog;
-}
-
-void QDenoiser::setStatus(QString status){
-    _status=status;
-}
-
-QString QDenoiser::getStatus(){
-    return _status;
+void QDenoiser::setTimeSpent(double ms){
+    QMutexLocker lock(&mutex);
+    time_computing=ms;
 }
 
 void QDenoiser::updateTimer(){
+    QMutexLocker lock(&mutex);
     QTimer* tmp= (QTimer*) sender();
     time_computing+=(double)tmp->interval()/1000;
 }
-double QDenoiser::getTimeSpent(){
-    return time_computing;
+bool QDenoiser::isRendering(){
+    QMutexLocker lock(&mutex);
+    return rendering;
 }
-void QDenoiser::setTimeSpent(double ms){
-    time_computing=ms;
+bool QDenoiser::isPaused(){
+    QMutexLocker lock(&mutex);
+    return paused;
+}
+denoiseClass* QDenoiser::getSettings(){
+    QMutexLocker lock(&mutex);
+    return sets;
+}
+denoiseClass::method QDenoiser::getDenoisingMethod(){
+    QMutexLocker lock(&mutex);
+    return denoisingMethod;
+}
+QImage* QDenoiser::getImage(){
+    QMutexLocker lock(&mutex);
+    return output;
+}
+int QDenoiser::getProgress(){
+    QMutexLocker lock(&mutex);
+    return progress;
+}
+QString QDenoiser::getStatus(){
+    QMutexLocker lock(&mutex);
+    return _status;
+}
+double QDenoiser::getTimeSpent(){
+    QMutexLocker lock(&mutex);
+    return time_computing;
 }
 
 void QDenoiser::startRender(){
@@ -316,12 +333,11 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
             endX=settings.section(" ",7,7).toInt();
     bool silent=true;
     if (settings.section(" ",8,8)=="false") silent=false;
-    setRendering(true);
-    setStatus("Status: computing.");
-    //if(!silent) QMetaObject::invokeMethod(this,"iconPause");
-    if(!silent)emit stoptimer();
-    setTimeSpent(0.0);
-    if(!silent)emit starttimer();
+    if (!silent) setRendering(true);
+    if (!silent) setStatus("Status: computing.");
+    if (!silent) emit stoptimer();
+    if (!silent) setTimeSpent(0.0);
+    if (!silent) emit starttimer();
 
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
@@ -332,22 +348,22 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
     // main cycle (begin with Y)
     for (int y=beginY;y<endY;y++){
         // visual updates of progress
-        if(!silent) setProgress(((y-beginY)*100)/(endY-beginY-1));
+        if(!silent) setProgress(1+((y-beginY)*100)/(endY-beginY-1));
         else *prog=((y-beginY)*100)/(endY-beginY-1);
         // sub cycle for X
         for (int x=beginX;x<endX;x++){
             // rendering and stop/pause processing
             if (isPaused()){
-                if(!silent)emit stoptimer();
+                if(!silent) emit stoptimer();
                 while (isPaused()){
                     if (!isRendering()) setPaused(false);
                     sleep(1);
                 }
-                if(!silent)emit starttimer();
+                if(!silent) emit starttimer();
             }
             if (!isRendering()){
                 setRendering(false);
-                if(!silent)emit stoptimer();
+                if(!silent) emit stoptimer();
                 return;
             }
             // begin of algorithm; zeroing Z for every pixel
@@ -445,8 +461,8 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
         }
 
     }
-    setStatus("Status: done.");
-    if(!silent)emit stoptimer();
+    if (!silent) setStatus("Status: done.");
+    if (!silent) emit stoptimer();
     if (!silent) setRendering(false);
 
 /*
@@ -497,6 +513,9 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
         if (!isRendering()){
             setRendering(false);
             emit stoptimer();
+            delete[] in_arr;
+            delete[] out_arr;
+            delete[] progressArr;
             return;
         }
         finish=0;
@@ -522,7 +541,6 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
         for (int n1=(i*(n)/CPUnum);n1<((i+1)*n)/CPUnum;n1++)
             for (int m1=0;m1<m;m1++)
                 output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
-    //QMetaObject::invokeMethod(this,"updatePixel");
     delete[] out_arr;
     delete[] progressArr;
     emit stoptimer();
