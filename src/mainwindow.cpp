@@ -15,11 +15,7 @@
 
 //#include "matrix.h"
 #include <time.h>
-QImage *Orig,*Noise,*Output,*Comparison;
-noiseClass* noiseSettings;
-denoiseClass* denoiseSettings;
-blurClass* blurSettings;
-QDenoiser *denoiser;
+
 int m=0,n=0,number=0,z_ind=0;
 int flag=0;
 bool isPaused=false,isRendering=false;
@@ -66,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
                          " MB/"+QString::number(getTotalSystemMemory())+" MB ("+QString::number(getProcMemory())+"MB used by program)) ",QMessageBox::Ok);//*/
 
 
+
     Orig = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     Orig->fill(Qt::transparent);
     Noise = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
@@ -76,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Comparison->fill(Qt::transparent);
 
     //ui->originalLabel->setPixmap(QPixmap::fromImage(QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied)));
-
+    denoiser=new QDenoiser();
     noiseSettings= new noiseClass();
     denoiseSettings= new denoiseClass();
     blurSettings=new blurClass();
@@ -126,7 +123,8 @@ MainWindow::~MainWindow()
     sw->deleteLater();
     dw->deleteLater();
     delete ui;
-    delete denoiser;
+    if (denoiser->isRendering()) denoiser->cancelRender();
+    denoiser->deleteLater();
     destroy(true,true);
 }
 void MainWindow::on_openButton_clicked()
@@ -262,8 +260,10 @@ void MainWindow::on_denoiseButton_clicked(){
         delete denoiseSettings;
         denoiseSettings=dw->getSettings();
         setWindowTitle("Denoising with "+ui->menuBar->actions().at(0)->menu()->actions().at(dw->curr_ind)->text()+".");
-        denoiser=new QDenoiser(Noise,denoiseSettings);
-
+        //delete denoiser;
+        //denoiser=new QDenoiser(Noise,denoiseSettings);
+        denoiser->setSettings(denoiseSettings);
+        denoiser->setImage(Noise);
         //denoiser->startRender();
         QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);

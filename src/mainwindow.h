@@ -29,6 +29,12 @@ public:
     denoiseWidget* dw;
     blurWidget* bw;
     DropArea *dropArea;
+
+    QImage *Orig,*Noise,*Output,*Comparison;
+    noiseClass* noiseSettings;
+    denoiseClass* denoiseSettings;
+    blurClass* blurSettings;
+    QDenoiser *denoiser;
     
 private:
     Ui::MainWindow *ui;

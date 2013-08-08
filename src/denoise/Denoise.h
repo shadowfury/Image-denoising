@@ -27,6 +27,7 @@ public:
         pow=right.pow;
         return *this;
     }
+    ~denoiseClass(){}
 
 };
 

@@ -105,6 +105,7 @@ QDenoiser::QDenoiser()
     input->fill(Qt::transparent);
     output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     output->fill(Qt::transparent);
+    setImage(input);
     setSettings(new denoiseClass());
     setRendering(false);
     setPaused(false);
@@ -141,8 +142,9 @@ QDenoiser::~QDenoiser(){
 }
 
 void QDenoiser::setSettings(denoiseClass* settings){
+    setDenoisingMethod(settings->denoisingMethod);
     QMutexLocker lock(&mutex);
-    sets=settings;
+    sets=settings;    
 }
 void QDenoiser::setDenoisingMethod(denoiseClass::method val){
     QMutexLocker lock(&mutex);
