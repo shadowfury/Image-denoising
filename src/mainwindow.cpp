@@ -11,16 +11,12 @@
 #include <QTimer>
 #include <QFuture>
 
-
-
-//#include "matrix.h"
 #include <time.h>
 
-int m=0,n=0,number=0,z_ind=0;
 int flag=0;
-bool isPaused=false,isRendering=false;
 
-float RandNorm( int num );
+
+
 
 
 
@@ -42,8 +38,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // fftwnd_plan fftw2d_create_plan(int nx, int ny, fftw_direction dir, int flags);
 
-
-    index=0;
+    isPaused=false;
+    isRendering=false;
     //ui->label->scroll(100,100);
     srand ( time(NULL) );
     qsrand(time(NULL));
@@ -144,8 +140,8 @@ void MainWindow::on_openButton_clicked()
         Output->load(fileName);
         Comparison->load(fileName);*/
 
-        n=Orig->height();
-        m=Orig->width();
+        int n=Orig->height();
+        int m=Orig->width();
         delete Noise;
         delete Output;
         delete Comparison;
@@ -173,8 +169,8 @@ void MainWindow::image_dropped(){
         /*Noise->load(fileName);
         Output->load(fileName);
         Comparison->load(fileName);*/
-        n=Orig->height();
-        m=Orig->width();
+        int n=Orig->height();
+        int m=Orig->width();
         delete Noise;
         delete Output;
         delete Comparison;
@@ -350,6 +346,8 @@ void MainWindow::on_pushButton_5_clicked()
 //computes error (standart deviation)
 void MainWindow::on_pushButton_6_clicked()
 {
+    int n=Orig->height();
+    int m=Orig->width();
     double error[3];
     error[0]=0;
     error[1]=0;
@@ -430,6 +428,8 @@ int MainWindow::noisePixelminus(int noiseVal,int pixVal,int prob)
 }
 void MainWindow::add_noise(QImage *original,QImage *noised,noiseClass* noiseSettings){
     QColor p;
+    int n=original->height();
+    int m=original->width();
     for(int i=0;i<m;i++){
         for(int j=0;j<n;j++){
             p = original->pixel(i,j);
@@ -448,7 +448,7 @@ void MainWindow::add_noise(QImage *original,QImage *noised,noiseClass* noiseSett
     }
 }
 
-float RandNorm( int num )
+float MainWindow::RandNorm( int num )
 {
   float sum = 0.0f;
   for (int i = 0; i < num; ++i)
@@ -458,6 +458,8 @@ float RandNorm( int num )
 }
 void MainWindow::add_noise_n(QImage *original,QImage *noised,noiseClass* noiseSettings){
     QColor p;
+    int n=original->height();
+    int m=original->width();
     for(int i=0;i<m;i++){
         for(int j=0;j<n;j++){
             p = original->pixel(i,j);

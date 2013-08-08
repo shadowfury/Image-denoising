@@ -22,7 +22,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    int index;
 
     settingWidget *sw;
     noiseWidget* nw;
@@ -35,6 +34,7 @@ public:
     denoiseClass* denoiseSettings;
     blurClass* blurSettings;
     QDenoiser *denoiser;
+    bool isPaused,isRendering;
     
 private:
     Ui::MainWindow *ui;
@@ -62,6 +62,7 @@ private slots:
     QImage blurred(const QImage& image, const QRect& rect, int radius, bool alphaOnly=false);
     int noisePixelplus(int noiseVal,int pixVal,int prob);
     int noisePixelminus(int noiseVal,int pixVal,int prob);
+    float RandNorm( int num );
 
 
     void closeEvent(QCloseEvent* ev);

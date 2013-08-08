@@ -23,7 +23,6 @@ HEADERS  += src/mainwindow.h \
     src/denoise/noisewidget.h \
     src/denoise/Noise.h \
     src/RgbMy.h \
-    src/matrix.h \
     src/denoise/denoisewidget.h \
     src/denoise/Denoise.h \
     src/droparea.h \
