@@ -8,7 +8,7 @@ public:
         NLM,
         NLM_fast,
         NLM_fast_FFT,
-        NLM_multyThread
+        NLM_multiThread
     }enumField;
 
     int patch_size, search_window, pow;

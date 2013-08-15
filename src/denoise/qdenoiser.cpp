@@ -94,13 +94,6 @@ void sleep(int ms) {
 
 QDenoiser::QDenoiser()
 {
-    computingTime=new QTimer(this);
-    connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
-    computingTime->setSingleShot(false);
-    computingTime->setInterval(25);
-    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
-    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
-    setTimeSpent(0.0);
     input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     input->fill(Qt::transparent);
     output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
@@ -112,16 +105,24 @@ QDenoiser::QDenoiser()
     setProgress(0);
     setStatus("");
     setDenoisingMethod(denoiseClass::NLM_fast_FFT);
+
+    thread = new QThread;
+    connect(thread, SIGNAL(started()), this, SLOT(Render()));
+    connect(this,SIGNAL(finished()),thread,SLOT(quit()));
+
+    computingTime=new QTimer();
+    connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
+    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
+    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
+    computingTime->setSingleShot(false);
+    computingTime->setInterval(25);
+    setTimeSpent(0.0);
+
+    this->moveToThread(thread);
+
 }
 
 QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
-    computingTime=new QTimer(this);
-    connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
-    computingTime->setSingleShot(false);
-    computingTime->setInterval(25);
-    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
-    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
-    setTimeSpent(0.0);
     input = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
     input->fill(Qt::transparent);
     output = new QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied);
@@ -133,12 +134,33 @@ QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
     setProgress(0);
     setStatus(0);
     setDenoisingMethod(settings->denoisingMethod);
+
+    thread = new QThread;
+    connect(thread, SIGNAL(started()), this, SLOT(Render()));
+    connect(this,SIGNAL(finished()),thread,SLOT(quit()));
+
+    computingTime=new QTimer();
+    connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
+    connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
+    connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
+    computingTime->setSingleShot(false);
+    computingTime->setInterval(25);
+    setTimeSpent(0.0);
+
+    this->moveToThread(thread);
+
+
 }
 QDenoiser::~QDenoiser(){
+    if (isRendering()) cancelRender();
+    sleep(20);
+    thread->quit();
     delete input;
     delete output;
     delete computingTime;
     delete sets;
+    thread->deleteLater();
+    this->deleteLater();
 }
 
 void QDenoiser::setSettings(denoiseClass* settings){
@@ -218,8 +240,7 @@ double QDenoiser::getTimeSpent(){
     QMutexLocker lock(&mutex);
     return time_computing;
 }
-
-void QDenoiser::startRender(){
+void QDenoiser::Render(){
     // big function
     setRendering(true);
     setPaused(false);
@@ -227,12 +248,14 @@ void QDenoiser::startRender(){
     if (getDenoisingMethod()==denoiseClass::simple_squares){
         int size=getSettings()->patch_size;
         QtConcurrent::run(this,&QDenoiser::simple_squares,size);
+        //simple_squares(size);
     }
     else if (getDenoisingMethod()==denoiseClass::NLM){
         int pro[1];
         QString settings=" "+QString::number(getSettings()->patch_size)+" "+QString::number(getSettings()->search_window)+" "+QString::number(getSettings()->pow)+
                 " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" false ";
         QtConcurrent::run(this,&QDenoiser::NLM,input,output,settings,pro+0);
+        //NLM(input,output,settings,pro+0);
     }
     else if (getDenoisingMethod()==denoiseClass::NLM_fast){
         int size_m=getSettings()->patch_size;
@@ -246,7 +269,7 @@ void QDenoiser::startRender(){
         int h=getSettings()->pow;
         QtConcurrent::run(this,&QDenoiser::NLM_fast_FFT,size_m,size_b,h);
     }
-    else if (getDenoisingMethod()==denoiseClass::NLM_multyThread){
+    else if (getDenoisingMethod()==denoiseClass::NLM_multiThread){
         QString settings=" "+QString::number(getSettings()->patch_size)+" "+QString::number(getSettings()->search_window)+" "+QString::number(getSettings()->pow)+" ";
         QtConcurrent::run(this,&QDenoiser::NLM_multiThread,input,output,settings);
     }
@@ -254,6 +277,10 @@ void QDenoiser::startRender(){
 }
 
 
+
+void QDenoiser::startRender(){
+    thread->start();
+}
 void QDenoiser::pauseRender(){
     setPaused(true);
 }
@@ -296,6 +323,7 @@ void QDenoiser::simple_squares(int size){
             if (!isRendering()){
                 setRendering(false);
                 emit stoptimer();
+                emit finished();
                 return;
             }
             z_red=0;
@@ -316,14 +344,15 @@ void QDenoiser::simple_squares(int size){
             q.setRed(z_red/c);
             q.setBlue(z_blue/c);
             q.setGreen(z_green/c);
+            static int count=0;
+            count++;
             output->setPixel(x,y,q.rgb());
-
         }
     }
     emit stoptimer();
     setStatus("Status: done.");
     setRendering(false);
-
+    emit finished();
 }
 
 // single-threaded classic NLM
@@ -366,6 +395,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
             if (!isRendering()){
                 setRendering(false);
                 if(!silent) emit stoptimer();
+                if(!silent) emit finished();
                 return;
             }
             // begin of algorithm; zeroing Z for every pixel
@@ -466,6 +496,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
     if (!silent) setStatus("Status: done.");
     if (!silent) emit stoptimer();
     if (!silent) setRendering(false);
+    if (!silent) emit finished();
 
 /*
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -518,11 +549,12 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
             delete[] in_arr;
             delete[] out_arr;
             delete[] progressArr;
+            emit finished();
             return;
         }
         finish=0;
         for (int i=0;i<CPUnum;i++) if (results.at(i).isFinished()) finish++;
-        if ((merge.elapsed()>30)&&!isPaused()){
+        if ((merge.elapsed()>50)&&!isPaused()){
             merge.restart();
             for (int i=0;i<CPUnum;i++)
                 for (int n1=(i*(n)/CPUnum);n1<((i+1)*n)/CPUnum;n1++)
@@ -533,7 +565,7 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
             for (int i=0;i<CPUnum;i++) percent+=progressArr[i];
             setProgress(percent/CPUnum);
         }
-        sleep(5);
+        sleep(15);
     }
     setStatus("Status: done.");
 
@@ -547,6 +579,7 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
     delete[] progressArr;
     emit stoptimer();
     setRendering(false);
+    emit finished();
 }
 
 void QDenoiser::NLM_fast(int size_m,int size_b,int h)
@@ -593,7 +626,38 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
     int t1,t2;
     for (int i=0;i<m;i++){
         setProgress((i*100)/(m-1));
+        /* check if isPaused or isCancelled */
         for (int j=0;j<n;j++){
+            if (isPaused()){
+                emit stoptimer();
+                while (isPaused()){
+                    if (!isRendering()) setPaused(false);
+                    sleep(1);
+                }
+                emit starttimer();
+            }
+            if (!isRendering()){
+                setRendering(false);
+
+                setStatus("Status: deleting 4d-array.");
+                for (int i=0;i<m;i++){
+                    setProgress((i*100)/(m-1));
+                    for (int j=0;j<n;j++){
+                        for (int k=0;k<size_b;k++){
+                            delete[] Sdx[i][j][k];
+                        }
+                        delete[] Sdx[i][j];
+                    }
+                    delete[] Sdx[i];
+
+                }
+                delete[] Sdx;//*/
+                setStatus("Status: done.");
+                emit stoptimer();
+                emit finished();
+                return;
+            }
+            /* computing next */
             for (int k=0;k<size_b;k++){
                 for (int l=0;l<size_b;l++){
                     t1=i+k-m_size_b;
@@ -671,7 +735,9 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
 
                 }
                 delete[] Sdx;//*/
+                setStatus("Status: done.");
                 emit stoptimer();
+                emit finished();
                 return;
             }
             //setting normalizing constant to zero
@@ -759,6 +825,7 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
     setStatus("Status: done.");
     emit stoptimer();
     setRendering(false);
+    emit finished();
 
 }
 
@@ -839,13 +906,15 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
             }
             if (!isRendering()){
                 setRendering(false);
-                setStatus("Status: deleting 4d-array.");
+                setStatus("Status: deleting array.");
                 for (int i=0;i<m;i++){
                     setProgress((i*100)/(m-1));
                     delete[] Sdx[i];
                 }
                 delete[] Sdx;//*/
+                setStatus("Status: done.");
                 emit stoptimer();
+                emit finished();
                 return;
             }
             //перед кожною ітерацією обнулення Z
@@ -965,4 +1034,5 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
     emit stoptimer();
     setStatus("Status: done.");
     setRendering(false);
+    emit finished();
 }

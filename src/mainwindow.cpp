@@ -69,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Comparison->fill(Qt::transparent);
 
     //ui->originalLabel->setPixmap(QPixmap::fromImage(QImage(QSize(0,0), QImage::Format_ARGB32_Premultiplied)));
+
     denoiser=new QDenoiser();
     noiseSettings= new noiseClass();
     denoiseSettings= new denoiseClass();
@@ -260,11 +261,13 @@ void MainWindow::on_denoiseButton_clicked(){
         //denoiser=new QDenoiser(Noise,denoiseSettings);
         denoiser->setSettings(denoiseSettings);
         denoiser->setImage(Noise);
-        //denoiser->startRender();
-        QtConcurrent::run(denoiser,&QDenoiser::startRender);
+
+        denoiser->startRender();
+        //QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
-        timer->start(150);
+        connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()));
+        timer->start(50);
         timer->setSingleShot(false);
 
         isRendering=true;//

@@ -35,34 +35,39 @@ private:
     denoiseClass::method denoisingMethod;   // holds what method is selected
     QTimer *computingTime;                  // timer, counts computing time
     QMutex mutex;                           // to make class more thread safe
+    QThread* thread;                        // will move object to this thread after instantiation
 
 public:
     QDenoiser();                            // default constructor
     QDenoiser(QImage* in,denoiseClass* settings);
     ~QDenoiser();
 private slots:
+    /* you should not call any of these methods directly,
+     * please, use methods below in a 'public slots' section
+     */
     /* denoising methods */
     void simple_squares(int size);
     void NLM(QImage *inim,QImage *outim,QString settings, int* prog);
     void NLM_multiThread(QImage *inim,QImage *outim,QString settings);
     void NLM_fast(int size_m,int size_b,int h);
     void NLM_fast_FFT(int size_m,int size_b,int h);
-    /* pops Message box if not enough RAM */
-    void popMessageBox(int m1,int n1,int size_b);
-    /* sets progress */
-    void setProgress(int prog);
-    void setTimeSpent(double ms=0.0);
-    void updateTimer();
+    void Render();
+    void popMessageBox(int m1,int n1,int size_b); /* pops Message box if not enough RAM */
+    void updateTimer();  /* is invoked, when timer ticks, updating time spent */
+
+    void setProgress(int prog); /* sets progress */
+    void setTimeSpent(double ms=0.0); /* sets time spent while denoising */
+    void setRendering(bool state);
+    void setPaused(bool state);
+    void setStatus(QString status);
 
 signals:
     void stoptimer();
     void starttimer();
+    void finished();
 
 public slots:
-    /* setter functions, set corresponding private variables */
-    void setRendering(bool state);
-    void setPaused(bool state);
-    void setStatus(QString status);
+    /* setter functions, set corresponding private variables */    
     void setImage(QImage* inim);
     void setSettings(denoiseClass* settings);
     void setDenoisingMethod(denoiseClass::method val);
@@ -77,8 +82,7 @@ public slots:
     bool isPaused();
     double getTimeSpent();
 
-
-    /* control methods - start, pause, resume and end rendering */
+    /* control methods - start, pause, resume and cancel rendering */
     void startRender();
     void pauseRender();
     void resumeRender();
