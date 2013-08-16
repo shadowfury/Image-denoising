@@ -107,10 +107,10 @@ QDenoiser::QDenoiser()
     setDenoisingMethod(denoiseClass::NLM_fast_FFT);
 
     thread = new QThread;
-    connect(thread, SIGNAL(started()), this, SLOT(Render()));
-    connect(this,SIGNAL(finished()),thread,SLOT(quit()));
+    connect(thread, SIGNAL(started()), this, SLOT(Render()),Qt::QueuedConnection);
+    connect(this,SIGNAL(finished()),thread,SLOT(quit()),Qt::QueuedConnection);//*/
 
-    computingTime=new QTimer();
+    computingTime=new QTimer(this);
     connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
     connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
     connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
@@ -136,10 +136,10 @@ QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
     setDenoisingMethod(settings->denoisingMethod);
 
     thread = new QThread;
-    connect(thread, SIGNAL(started()), this, SLOT(Render()));
-    connect(this,SIGNAL(finished()),thread,SLOT(quit()));
+    connect(thread, SIGNAL(started()), this, SLOT(Render()),Qt::QueuedConnection);
+    connect(this,SIGNAL(finished()),thread,SLOT(quit()),Qt::QueuedConnection);//*/
 
-    computingTime=new QTimer();
+    computingTime=new QTimer(this);
     connect(computingTime,SIGNAL(timeout()),this,SLOT(updateTimer()),Qt::QueuedConnection);
     connect(this,SIGNAL(stoptimer()),computingTime,SLOT(stop()),Qt::QueuedConnection);
     connect(this,SIGNAL(starttimer()),computingTime,SLOT(start()),Qt::QueuedConnection);
@@ -153,7 +153,14 @@ QDenoiser::QDenoiser(QImage* in,denoiseClass* settings){
 }
 QDenoiser::~QDenoiser(){
     if (isRendering()) cancelRender();
-    sleep(20);
+    sleep(60);
+    /*QEventLoop loop;
+    connect(this, SIGNAL(finished()), &loop, SLOT(quit()));
+    QTimer cleanUp;
+    cleanUp.setSingleShot(5000);
+    cleanUp.start();
+    connect(&cleanUp, SIGNAL(timeout()), &loop, SLOT(quit()));
+    loop.exec(); //blocks untill either theSignalToWaitFor or timeout was*/
     thread->quit();
     delete input;
     delete output;
@@ -273,7 +280,6 @@ void QDenoiser::Render(){
         QString settings=" "+QString::number(getSettings()->patch_size)+" "+QString::number(getSettings()->search_window)+" "+QString::number(getSettings()->pow)+" ";
         QtConcurrent::run(this,&QDenoiser::NLM_multiThread,input,output,settings);
     }
-
 }
 
 
@@ -560,9 +566,10 @@ void QDenoiser::NLM_multiThread(QImage *inim,QImage *outim,QString settings)
                 for (int n1=(i*(n)/CPUnum);n1<((i+1)*n)/CPUnum;n1++)
                     for (int m1=0;m1<m;m1++)
                         output->setPixel(m1,n1,out_arr[i].pixel(m1,n1));
-            //QMetaObject::invokeMethod(this,"updatePixel");
             int percent=0;
+            mutex.lock();
             for (int i=0;i<CPUnum;i++) percent+=progressArr[i];
+            mutex.unlock();
             setProgress(percent/CPUnum);
         }
         sleep(15);
@@ -598,11 +605,8 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
         setRendering(false);
         return;
     }
-    //QMetaObject::invokeMethod(this,"iconPause");
-
     setStatus("Status: creating 4d-array.");
     setProgress(0);
-
 
     //brainblowing creating 4d dynamic array.
     // probably wrap array into something like this
@@ -618,7 +622,6 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
             }
         }
     }//*/
-
 
     QColor p,q;
 
@@ -838,11 +841,8 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
     setRendering(true);
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
-    //brainblowing creating 4d dynamic array.
-    //rgb_my* Sdx=new rgb_my[size_b*size_b*m*n];
 
-    //QMetaObject::invokeMethod(this,"iconPause");
-    setStatus("Status: creating 4d-array.");
+    setStatus("Status: creating array.");
     setProgress(0);
 
     rgb_my** Sdx=new rgb_my*[m];
@@ -854,7 +854,7 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
 
     QColor p;
 
-    setStatus("Status: computing 2d-array.");
+    setStatus("Status: computing array.");
     for (int i=0;i<m;i++){
         setProgress((i*100)/(m-1));
         for (int j=0;j<n;j++){
@@ -917,7 +917,7 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
                 emit finished();
                 return;
             }
-            //перед кожною ітерацією обнулення Z
+            // seting Z to zero before every iteration
             z.setBlue(0);
             z.setGreen(0);
             z.setRed(0);

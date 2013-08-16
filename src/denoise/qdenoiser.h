@@ -14,6 +14,7 @@
 #include <QTimer>
 
 #include <QObject>
+#include <QEventLoop>
 #include <QFuture>
 #include <QtConcurrentRun>
 
