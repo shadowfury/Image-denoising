@@ -266,7 +266,8 @@ void MainWindow::on_denoiseButton_clicked(){
         //QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
-        connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()));
+        connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()),Qt::QueuedConnection);
+        connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::QueuedConnection);
         timer->start(50);
         timer->setSingleShot(false);
 
@@ -334,6 +335,9 @@ void MainWindow::timeout_slot(){
     }
 }
 
+void MainWindow::popMessageBox(QString line){
+    QMessageBox::warning(0,line.split("|||").at(0),line.split("|||").at(1),QMessageBox::Ok);
+}
 
 //saving files to images and csv
 void MainWindow::on_pushButton_5_clicked()

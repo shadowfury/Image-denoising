@@ -299,13 +299,6 @@ void QDenoiser::cancelRender(){
     setRendering(false);
 }
 
-void QDenoiser::popMessageBox(int m1,int n1,int size_b)
-{
-    QMessageBox::warning(0,QString("Warning, can not allocate memory."),QString("Total available memory (")+QString::number(getAvailableSystemMemory()+getProcMemory())+
-                         QString(" MB/")+QString::number(getTotalSystemMemory())+QString(" MB) is less then reqired for denoising this image (")
-                         +QString::number((sizeof(rgb_my)*m1*n1*size_b*size_b)/(1024*1024))+QString(" MB)"),QMessageBox::Ok);
-}
-
 void QDenoiser::simple_squares(int size){
     setRendering(true);
     setStatus("Status: computing.");    
@@ -379,7 +372,7 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
     int m_size=(size_m-1)/2;
     int m_size_b=(size_b-1)/2;
     //int c=0;
-    QColor p,q,fin,out,noize;
+    QColor p,q,noize;
     // weight array and normalizing factor z
     rgb_my Weight[size_b][size_b],z;    
     // main cycle (begin with Y)
@@ -462,11 +455,10 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
 
 
                 }
-            }            
-            fin.setRed(0);
-            fin.setBlue(0);
-            fin.setGreen(0);
-            outim->setPixel(x,y,fin.rgb());
+            }
+            rgb_my out;
+
+
             //cycle for counting final value of output pixel
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
@@ -479,21 +471,15 @@ void QDenoiser::NLM(QImage *inim,QImage *outim,QString settings, int* prog)
                             noize=inim->pixel(x-ii+m_size_b,y-jj+m_size_b);
                         if (x+ii-m_size_b<endX) if (x+ii-m_size_b>=beginX) if (y+jj-m_size_b<endY) if (y+jj-m_size_b>=beginY)
                             noize=inim->pixel(x+ii-m_size_b,y+jj-m_size_b);
-                        Weight[ii][jj].setRed(Weight[ii][jj].red()*(noize.red())/z.red());
-                        Weight[ii][jj].setBlue(Weight[ii][jj].blue()*(noize.blue())/z.blue());
-                        Weight[ii][jj].setGreen(Weight[ii][jj].green()*(noize.green())/z.green());
-                        fin.setRed(qRound(Weight[ii][jj].red()));
-                        fin.setBlue(qRound(Weight[ii][jj].blue()));
-                        fin.setGreen(qRound(Weight[ii][jj].green()));
-                        out=outim->pixel(x,y);
-                        out.setRed(out.red()+fin.red());
-                        out.setBlue(out.blue()+fin.blue());
-                        out.setGreen(out.green()+fin.green());
-                        outim->setPixel(x,y,out.rgb());
-                    //}
+                        out.setRed(out.red()+Weight[ii][jj].red()*(double)noize.red());
+                        out.setBlue(out.blue()+Weight[ii][jj].blue()*(double)noize.blue());
+                        out.setGreen(out.green()+Weight[ii][jj].green()*(double)noize.green());
 
                 }
+
             }
+
+            outim->setPixel(x,y,QColor((int)(out.red()/z.red()),(int)(out.green()/z.green()),(int)(out.blue()/z.blue())).rgb());
             // updating image on the screen
 
         }
@@ -601,8 +587,13 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
     // to avoid running out of RAM, checking for available ram memory
 
     if ((getAvailableSystemMemory()+getProcMemory())<((long)sizeof(rgb_my)*m*n*size_b*size_b)/(1024*1024)){
-        popMessageBox(m,n,size_b);
+
+        emit errorString(QString("Warning, can not allocate memory.")+QString("|||")+QString("Total available memory (")+QString::number(getAvailableSystemMemory()+getProcMemory())+
+                                 QString(" MB/")+QString::number(getTotalSystemMemory())+QString(" MB) is less then reqired for denoising this image (")
+                                 +QString::number((sizeof(rgb_my)*m*n*size_b*size_b)/(1024*1024))+QString(" MB)"));
         setRendering(false);
+        emit stoptimer();
+        emit finished();
         return;
     }
     setStatus("Status: creating 4d-array.");
@@ -708,7 +699,6 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
     setStatus("Status: denoising image.");
     //int c=0;
     int x_p,x_m,y_p,y_m;
-    QColor fin,out,noize;
     rgb_my Weight[size_b][size_b],z;
 
     for (int y=0;y<n;y++){
@@ -776,11 +766,8 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
                 }
             }
 
-            fin.setRed(0);
-            fin.setBlue(0);
-            fin.setGreen(0);
-            output->setPixel(x,y,fin.rgb());
-
+            rgb_my out;
+            QColor noize;
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
                     //if ((x+ii-m_size_b<m)&&(x+ii-m_size_b>=0)&&(y+jj-m_size_b<n)&&(y+jj-m_size_b>=0)){
@@ -792,21 +779,13 @@ void QDenoiser::NLM_fast(int size_m,int size_b,int h)
                             noize=input->pixel(x-ii+m_size_b,y-jj+m_size_b);
                         if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
                             noize=input->pixel(x+ii-m_size_b,y+jj-m_size_b);
-                        Weight[ii][jj].setRed(Weight[ii][jj].red()*(noize.red())/z.red());
-                        Weight[ii][jj].setBlue(Weight[ii][jj].blue()*(noize.blue())/z.blue());
-                        Weight[ii][jj].setGreen(Weight[ii][jj].green()*(noize.green())/z.green());
-                        fin.setRed(qRound(Weight[ii][jj].red()));
-                        fin.setBlue(qRound(Weight[ii][jj].blue()));
-                        fin.setGreen(qRound(Weight[ii][jj].green()));
-                        out=output->pixel(x,y);
-                        out.setRed(out.red()+fin.red());
-                        out.setBlue(out.blue()+fin.blue());
-                        out.setGreen(out.green()+fin.green());
-                        output->setPixel(x,y,out.rgb());
-                    //}
 
+                        out.setRed(out.red()+Weight[ii][jj].red()*(double)noize.red());
+                        out.setBlue(out.blue()+Weight[ii][jj].blue()*(double)noize.blue());
+                        out.setGreen(out.green()+Weight[ii][jj].green()*(double)noize.green());
                 }
             }
+            output->setPixel(x,y,QColor((int)(out.red()/z.red()),(int)(out.green()/z.green()),(int)(out.blue()/z.blue())).rgb());
         }
 
     }
@@ -890,7 +869,6 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
     //int c=0;
     int x_p=0,x_m=0,y_p=0,y_m=0,diff_x=0,diff_y=0;
     rgb_my square_s,square_n;
-    QColor fin,out,noize;
     rgb_my Weight[size_b][size_b],z;
 
     for (int y=0;y<n;y++){
@@ -986,13 +964,10 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
                     z.setBlue(z.blue()+Weight[i][j].blue());
                     z.setGreen(z.green()+Weight[i][j].green());
                 }
-            }
+            }            
 
-            fin.setRed(0);
-            fin.setBlue(0);
-            fin.setGreen(0);
-            output->setPixel(x,y,fin.rgb());
-
+            rgb_my out;
+            QColor noize;
             for (int ii=0;ii<size_b;ii++){
                 for (int jj=0;jj<size_b;jj++){
                     //if ((x+ii-m_size_b<m)&&(x+ii-m_size_b>=0)&&(y+jj-m_size_b<n)&&(y+jj-m_size_b>=0)){
@@ -1004,21 +979,12 @@ void QDenoiser::NLM_fast_FFT(int size_m,int size_b,int h)
                             noize=input->pixel(x-ii+m_size_b,y-jj+m_size_b);
                         if (x+ii-m_size_b<m) if (x+ii-m_size_b>=0) if (y+jj-m_size_b<n) if (y+jj-m_size_b>=0)
                             noize=input->pixel(x+ii-m_size_b,y+jj-m_size_b);
-                        Weight[ii][jj].setRed(Weight[ii][jj].red()*(noize.red())/z.red());
-                        Weight[ii][jj].setBlue(Weight[ii][jj].blue()*(noize.blue())/z.blue());
-                        Weight[ii][jj].setGreen(Weight[ii][jj].green()*(noize.green())/z.green());
-                        fin.setRed(qRound(Weight[ii][jj].red()));
-                        fin.setBlue(qRound(Weight[ii][jj].blue()));
-                        fin.setGreen(qRound(Weight[ii][jj].green()));
-                        out=output->pixel(x,y);
-                        out.setRed(out.red()+fin.red());
-                        out.setBlue(out.blue()+fin.blue());
-                        out.setGreen(out.green()+fin.green());
-                        output->setPixel(x,y,out.rgb());
-                    //}
-
+                        out.setRed(out.red()+Weight[ii][jj].red()*(double)noize.red());
+                        out.setBlue(out.blue()+Weight[ii][jj].blue()*(double)noize.blue());
+                        out.setGreen(out.green()+Weight[ii][jj].green()*(double)noize.green());
                 }
             }
+            output->setPixel(x,y,QColor((int)(out.red()/z.red()),(int)(out.green()/z.green()),(int)(out.blue()/z.blue())).rgb());
         }
 
     }

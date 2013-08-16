@@ -53,7 +53,7 @@ private slots:
     void NLM_fast(int size_m,int size_b,int h);
     void NLM_fast_FFT(int size_m,int size_b,int h);
     void Render();
-    void popMessageBox(int m1,int n1,int size_b); /* pops Message box if not enough RAM */
+
     void updateTimer();  /* is invoked, when timer ticks, updating time spent */
 
     void setProgress(int prog); /* sets progress */
@@ -66,6 +66,8 @@ signals:
     void stoptimer();
     void starttimer();
     void finished();
+    void errorString(QString); // sends signal, whenever error is encountered
+                               // consists of title and body "|||" string
 
 public slots:
     /* setter functions, set corresponding private variables */    
