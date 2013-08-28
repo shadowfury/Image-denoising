@@ -9,25 +9,25 @@ public:
         green_g=green;
         blue_b=blue;
     }
-    void setRed(double r){
+    inline void setRed(double r){
         red_r=r;
     }
-    void setBlue(double b){
+    inline void setBlue(double b){
         blue_b=b;
     }
-    void setGreen(double g){
+    inline void setGreen(double g){
         green_g=g;
     }
-    double red(){
+    inline double red() const{
         return red_r;
     }
-    double blue(){
+    inline double blue() const{
         return blue_b;
     }
-    double green(){
+    inline double green() const{
         return green_g;
     }
-    double color(int count){
+    double color(int count) const{
         if (count==0) return red_r;
         if (count==1) return green_g;
         if (count==2) return blue_b;
@@ -36,6 +36,12 @@ public:
         if (count==0) red_r=color;
         if (count==1) green_g=color;
         if (count==2) blue_b=color;
+    }
+    rgb_my& operator =(const rgb_my &right){
+        this->red_r=right.red();
+        this->blue_b=right.blue();
+        this->green_g=right.green();
+        return *this;
     }
 };
 #endif // RGBMY_H

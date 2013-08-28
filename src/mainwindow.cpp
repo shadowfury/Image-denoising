@@ -114,6 +114,7 @@ MainWindow::~MainWindow()
     delete Orig;
     delete Noise;
     delete Comparison;
+
     delete noiseSettings;
     sw->setVisible(false);
     dw->setVisible(false);
@@ -146,8 +147,8 @@ void MainWindow::on_openButton_clicked()
         delete Noise;
         delete Output;
         delete Comparison;
-        //delete Orig;
-        Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        delete Orig;
+        Orig = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
         Orig->load(fileName);
         Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
         Noise->fill(Qt::black);
@@ -160,6 +161,7 @@ void MainWindow::on_openButton_clicked()
         ui->originalLabel->setPixmap(QPixmap::fromImage(*Orig));
         ui->originalLabel->setAlignment(Qt::AlignCenter);
         ui->originalLabel->repaint();
+        list_formats.clear();
     }
 }
 
@@ -267,6 +269,7 @@ void MainWindow::on_denoiseButton_clicked(){
         QTimer *timer=new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
         connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()),Qt::QueuedConnection);
+        connect(denoiser,SIGNAL(finished()),timer,SLOT(stop()),Qt::QueuedConnection);
         connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::QueuedConnection);
         timer->start(50);
         timer->setSingleShot(false);
@@ -323,6 +326,7 @@ void MainWindow::timeout_slot(){
     if (!denoiser->isRendering()){
         QTimer *tmp=(QTimer*)sender();
         tmp->stop();
+        //delete tmp;
         isRendering=false;
         isPaused=false;
 

@@ -19,6 +19,11 @@ DropArea::DropArea(QWidget *parent)
     //clear();
 }
 
+DropArea::~DropArea(){
+    delete current;
+    delete next;
+}
+
 void DropArea::dragEnterEvent(QDragEnterEvent *event)
 {
     //if (!isImageSelected()) setText(tr("<u>drop image here or click to \n invoke file open dialog</u>"));

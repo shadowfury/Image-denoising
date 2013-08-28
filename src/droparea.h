@@ -16,6 +16,7 @@ class DropArea : public QLabel
 
 public:
     DropArea(QWidget *parent = 0);
+    ~DropArea();
 
 public slots:
     void clear();
@@ -43,7 +44,6 @@ protected:
 
 
 private:
-    QLabel *label;
     bool selected;
     QImage *current, *next;
 };

@@ -21,10 +21,11 @@ public:
 
     }
     denoiseClass& operator =(const denoiseClass &right){
-        denoisingMethod = right.denoisingMethod;
-        patch_size=right.patch_size;
-        search_window=right.search_window;
-        pow=right.pow;
+        this->enumField = right.enumField;
+        this->denoisingMethod=right.denoisingMethod;
+        this->patch_size=right.patch_size;
+        this->search_window=right.search_window;
+        this->pow=right.pow;
         return *this;
     }
     ~denoiseClass(){}

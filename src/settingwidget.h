@@ -9,7 +9,6 @@ class settingWidget : public QDialog
 {
     Q_OBJECT
     QGridLayout *layout;
-    QPushButton *selectButton;
     int widgetCount;
 public:
     settingWidget(QWidget *parent = 0);

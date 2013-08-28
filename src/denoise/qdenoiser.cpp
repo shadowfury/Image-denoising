@@ -258,7 +258,7 @@ void QDenoiser::Render(){
         //simple_squares(size);
     }
     else if (getDenoisingMethod()==denoiseClass::NLM){
-        int pro[1];
+        int pro[1]={0};
         QString settings=" "+QString::number(getSettings()->patch_size)+" "+QString::number(getSettings()->search_window)+" "+QString::number(getSettings()->pow)+
                 " "+QString::number(0)+" "+QString::number(n)+" "+QString::number(0)+" "+QString::number(m)+" false ";
         QtConcurrent::run(this,&QDenoiser::NLM,input,output,settings,pro+0);
