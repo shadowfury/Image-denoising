@@ -267,10 +267,10 @@ void MainWindow::on_denoiseButton_clicked(){
         denoiser->startRender();
         //QtConcurrent::run(denoiser,&QDenoiser::startRender);
         QTimer *timer=new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()));
-        connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()),Qt::QueuedConnection);
-        connect(denoiser,SIGNAL(finished()),timer,SLOT(stop()),Qt::QueuedConnection);
-        connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::QueuedConnection);
+        connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),timer,SLOT(stop()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::UniqueConnection);
         timer->start(50);
         timer->setSingleShot(false);
 
