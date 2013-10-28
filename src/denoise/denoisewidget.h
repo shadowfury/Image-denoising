@@ -9,7 +9,7 @@
 #include <QMenu>
 #include <QDialog>
 #include "Denoise.h"
-#include <QtGui/QWidget>
+#include <QWidget>
 
 
 class denoiseWidget : public QDialog

@@ -7,7 +7,7 @@
 #include <QDialog>
 #include <QComboBox>
 #include "Noise.h"
-#include <QtGui/QWidget>
+#include <QWidget>
 
 
 class noiseWidget : public QWidget

@@ -270,6 +270,7 @@ void MainWindow::on_denoiseButton_clicked(){
         connect(timer, SIGNAL(timeout()), this, SLOT(timeout_slot()),Qt::UniqueConnection);
         connect(denoiser,SIGNAL(finished()),this,SLOT(timeout_slot()),Qt::UniqueConnection);
         connect(denoiser,SIGNAL(finished()),timer,SLOT(stop()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),timer,SLOT(deleteLater()),Qt::UniqueConnection);
         connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::UniqueConnection);
         timer->start(50);
         timer->setSingleShot(false);
@@ -324,9 +325,6 @@ void MainWindow::timeout_slot(){
     ui->statusLabel->setText(denoiser->getStatus());
 
     if (!denoiser->isRendering()){
-        QTimer *tmp=(QTimer*)sender();
-        tmp->stop();
-        //delete tmp;
         isRendering=false;
         isPaused=false;
 

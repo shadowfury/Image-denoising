@@ -7,7 +7,7 @@
 #include <QDialog>
 #include <QComboBox>
 #include "Blur.h"
-#include <QtGui/QWidget>
+#include <QWidget>
 
 
 class blurWidget : public QWidget

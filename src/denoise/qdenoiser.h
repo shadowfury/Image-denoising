@@ -16,7 +16,7 @@
 #include <QObject>
 #include <QEventLoop>
 #include <QFuture>
-#include <QtConcurrentRun>
+#include <QtConcurrent/QtConcurrentRun>
 
 #include <QMutex>
 #include <QMutexLocker>
