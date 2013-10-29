@@ -12,13 +12,9 @@
 #include <QFuture>
 
 #include <time.h>
+#include <QCloseEvent>
 
 int flag=0;
-
-
-
-
-
 
 
 void MainWindow::closeEvent(QCloseEvent* ev)
@@ -28,16 +24,12 @@ void MainWindow::closeEvent(QCloseEvent* ev)
    QWidget::closeEvent(ev);
 }
 
-
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
     // fftwnd_plan fftw2d_create_plan(int nx, int ny, fftw_direction dir, int flags);
-
     isPaused=false;
     isRendering=false;
     //ui->label->scroll(100,100);
@@ -48,9 +40,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->originalLabel->setAcceptDrops(true);
 
     ui->statusLabel->setAlignment(Qt::AlignCenter);
-    ui->commandLinkButton_2->setIcon(QApplication::style()->standardIcon(QStyle::SP_CommandLink).pixmap(128, 128).transformed(QTransform().rotate(180,Qt::YAxis)));
-    ui->commandLinkButton_4->setIcon(QApplication::style()->standardIcon(QStyle::SP_CommandLink).pixmap(128, 128).transformed(QTransform().rotate(180,Qt::YAxis)));
-    ui->commandLinkButton_6->setIcon(QApplication::style()->standardIcon(QStyle::SP_CommandLink).pixmap(128, 128).transformed(QTransform().rotate(180,Qt::YAxis)));
 
     ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
     //qDebug()<<getProcMemory();
@@ -104,12 +93,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->originalLabel,SIGNAL(clicked()),this,SLOT(on_openButton_clicked()));
     connect(ui->originalLabel,SIGNAL(dropped()),this,SLOT(image_dropped()));
 
-
 }
 
 MainWindow::~MainWindow()
 {
-    //qDebug()<<"LOL destructor";
     delete Output;
     delete Orig;
     delete Noise;
@@ -120,11 +107,43 @@ MainWindow::~MainWindow()
     dw->setVisible(false);
     sw->deleteLater();
     dw->deleteLater();
-    delete ui;
     if (denoiser->isRendering()) denoiser->cancelRender();
     denoiser->deleteLater();
+    delete ui;
+
     destroy(true,true);
 }
+
+void MainWindow::setArgs(QStringList args){
+    m_args=args;
+}
+
+QStringList MainWindow::getArgs(){
+    return m_args;
+}
+
+void MainWindow::onEventLoopStarted(){
+    /* process console input here */
+
+    qDebug()<<"-i --input ( path to input image)";
+    qDebug()<<"-n --noise ( include corruption if input image with noise)";
+    qDebug()<<"--noise-method= normal/uniform";
+    qDebug()<<"( noise distribution law: normal or uniform)";
+    qDebug()<<"--noise-intensity= 30;30;30;";
+    qDebug()<<"( noise intencity: -256 to 256, 30 is default value if noise is selected)";
+    qDebug()<<"--noise-probability= 50;50;50;";
+    qDebug()<<"( noise probability: 0 to 100,50 is default value if noise is selected)";
+    qDebug()<<"-d --denoise ( include denoising is noisy image)";
+    qDebug()<<"--denoise-method= simple_squares/NLM/NLM_fast/NLM_fast_FFT/NLM_multiThread";
+    qDebug()<<"( list of all available denoising methods, NLM_fast is default if denoise is selected)";
+    qDebug()<<"--denoise-values= 7;21";
+    qDebug()<<"( neighbour and search window sizes, author of original method recommends to use 7,21. These are default values if denoise is selected)";
+    qDebug()<<"-o --output ( path to output image)";
+
+
+    qApp->exit();
+}
+
 void MainWindow::on_openButton_clicked()
 {
     QList<QByteArray> list_formats=QImageReader::supportedImageFormats();
@@ -198,9 +217,8 @@ void MainWindow::on_noiseDetailsButton_clicked()
     sw->move(QCursor::pos());
     if (!sw->isVisible()) sw->show();
     else sw->setVisible(false);
-
-
 }
+
 void MainWindow::on_denoiseDetailsButton_clicked(){
     dw->move(QCursor::pos());
     if (!dw->isVisible()) dw->show();

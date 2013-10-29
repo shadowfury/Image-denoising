@@ -35,6 +35,9 @@ public:
     blurClass* blurSettings;
     QDenoiser *denoiser;
     bool isPaused,isRendering;
+
+    QStringList m_args;
+
     
 private:
     Ui::MainWindow *ui;
@@ -53,6 +56,11 @@ public slots:
 
     void popMessageBox(QString line);
     void timeout_slot();
+
+    void setArgs(QStringList args);
+    QStringList getArgs();
+
+    void onEventLoopStarted();
 
 
 private slots:
