@@ -124,7 +124,7 @@ void ConsoleParser::parse(){
                 else if(m_line.at(i+1)=="nlm") m_denoiseMethod=denoiseClass::NLM;
                 else if(m_line.at(i+1)=="nlm_fast")m_denoiseMethod=denoiseClass::NLM_fast;
                 else if(m_line.at(i+1)=="nlm_fast_fft")m_denoiseMethod=denoiseClass::NLM_fast_FFT;
-                else if(m_line.at(i+1)=="nlm_multiThread")m_denoiseMethod=denoiseClass::NLM_multiThread;
+                else if(m_line.at(i+1)=="nlm_multithread")m_denoiseMethod=denoiseClass::NLM_multiThread;
                 else{
                     std::cout<<"-dm or --denoise-method option is incorrect, check if it is followed by correct value (example: -dm nlm_fast) or exclude this option (-dm nlm_fast is default value)"<<std::endl;
                     ok=false;
