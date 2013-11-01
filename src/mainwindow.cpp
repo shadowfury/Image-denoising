@@ -112,7 +112,7 @@ MainWindow::~MainWindow()
     denoiser->deleteLater();
     delete ui;
 
-    //destroy(true,true);
+    destroy(true,true);
 }
 
 void MainWindow::setArgs(QStringList args){
@@ -138,12 +138,12 @@ void MainWindow::onEventLoopStarted(){
     console.addCommand("-dm [--denoise-method]","@param select denoising method, NLM_fast is default if denoise is selected (simple_squares/NLM/NLM_fast/NLM_fast_FFT/NLM_multiThread)");
     console.addCommand("-dv [--denoise-values]","@param neighbour and search window sizes and denoising power, author of original method recommends to use 7:21 as for denoising power - increase it if filter does not consume noise (30 noise is roughly equal 120 power). These are default values if denoise is selected: 7:21:120)");
 
-    qDebug()<<getArgs();
+    //qDebug()<<getArgs();
     ConsoleParser parser(getArgs());
     parser.parse();
 
     // parser test
-    qDebug()<<"Ok "<<parser.isOk();
+    /*qDebug()<<"Ok "<<parser.isOk();
     qDebug()<<"Help"<<parser.isHelpSelected();
     qDebug()<<"input "<<parser.inputPath();
     qDebug()<<"output "<<parser.outputPath();
@@ -193,14 +193,11 @@ void MainWindow::onEventLoopStarted(){
     }
     //denoising
     if (parser.isDenoisingSelected()){
-        this->show();
         ui->cancelButton->setText(parser.outputPath());
 
         std::cout<<"Press ESC if you want to cancel denoising"<<std::endl;
-        std::cout<<"Current denoising progress (0 to 10) :";
+        //std::cout<<"Current denoising progress (0 to 10) :";
         QStringList d_values=parser.denoiseValues().split(":");
-        qDebug()<<d_values;
-        qDebug()<<d_values[0].toInt()<<" "<<d_values[1].toInt()<<" "<<d_values[2].toInt();
         delete denoiseSettings;
         denoiseSettings=new denoiseClass(parser.denoiseMethod(),d_values[0].toInt(),d_values[1].toInt(),d_values[2].toInt());
         denoiser->setSettings(denoiseSettings);
@@ -223,12 +220,13 @@ void MainWindow::onEventLoopStarted(){
 
     }
 
-    qApp->exit();
+    //qApp->exit();
 
 }
 
 void MainWindow::consoleTimeout(){
-    /*static int count=0;
+    /*qDebug()<<"timeout!!! "<<denoiser->getProgress();
+    static int count=0;
     QString convert=QString::number(denoiser->getProgress());
     convert.chop(1);
     if (convert.toInt()>count){
@@ -239,6 +237,7 @@ void MainWindow::consoleTimeout(){
         if (!Output->isNull()) delete Output;
         Output = new QImage(*denoiser->getImage());
         Output->save(ui->cancelButton->text(),0,-1);
+        qApp->exit();
     }
 }
 
