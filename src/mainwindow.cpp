@@ -10,7 +10,7 @@
 #include <QVector>
 #include <QTimer>
 #include <QFuture>
-
+#include <iostream>
 #include <time.h>
 #include <QCloseEvent>
 
@@ -103,6 +103,7 @@ MainWindow::~MainWindow()
     delete Comparison;
 
     delete noiseSettings;
+    delete denoiseSettings;
     sw->setVisible(false);
     dw->setVisible(false);
     sw->deleteLater();
@@ -111,10 +112,11 @@ MainWindow::~MainWindow()
     denoiser->deleteLater();
     delete ui;
 
-    destroy(true,true);
+    //destroy(true,true);
 }
 
 void MainWindow::setArgs(QStringList args){
+    args.removeFirst();
     m_args=args;
 }
 
@@ -124,24 +126,120 @@ QStringList MainWindow::getArgs(){
 
 void MainWindow::onEventLoopStarted(){
     /* process console input here */
+    ConsoleFormatter console(30,55);
+    console.addCommand("-h [--help]","Display this help message.");
+    console.addCommand("-i [--input]","@param path to input image");
+    console.addCommand("-o [--output]","@param path to where we should save output image");
+    console.addCommand("-n [--noise]","include corruption of input image with noise");
+    console.addCommand("-nm [--noise-method]","@param normal/uniform, noise distribution law: normal or uniform. Uniform is default value");
+    console.addCommand("-ni [--noise-intensity]","@param noise intensity: -256 to 256 (for R G B components) , 30:30:30 is default value if noise is selected");
+    console.addCommand("-np [--noise-probability]","@param noise probability: 0 to 100 (for R G B components) , 50:50:50 is default value if noise is selected");
+    console.addCommand("-d [--denoise]","include denoising of noisy image");
+    console.addCommand("-dm [--denoise-method]","@param select denoising method, NLM_fast is default if denoise is selected (simple_squares/NLM/NLM_fast/NLM_fast_FFT/NLM_multiThread)");
+    console.addCommand("-dv [--denoise-values]","@param neighbour and search window sizes and denoising power, author of original method recommends to use 7:21 as for denoising power - increase it if filter does not consume noise (30 noise is roughly equal 120 power). These are default values if denoise is selected: 7:21:120)");
 
-    qDebug()<<"-i --input ( path to input image)";
-    qDebug()<<"-n --noise ( include corruption if input image with noise)";
-    qDebug()<<"--noise-method= normal/uniform";
-    qDebug()<<"( noise distribution law: normal or uniform)";
-    qDebug()<<"--noise-intensity= 30;30;30;";
-    qDebug()<<"( noise intencity: -256 to 256, 30 is default value if noise is selected)";
-    qDebug()<<"--noise-probability= 50;50;50;";
-    qDebug()<<"( noise probability: 0 to 100,50 is default value if noise is selected)";
-    qDebug()<<"-d --denoise ( include denoising is noisy image)";
-    qDebug()<<"--denoise-method= simple_squares/NLM/NLM_fast/NLM_fast_FFT/NLM_multiThread";
-    qDebug()<<"( list of all available denoising methods, NLM_fast is default if denoise is selected)";
-    qDebug()<<"--denoise-values= 7;21";
-    qDebug()<<"( neighbour and search window sizes, author of original method recommends to use 7,21. These are default values if denoise is selected)";
-    qDebug()<<"-o --output ( path to output image)";
+    qDebug()<<getArgs();
+    ConsoleParser parser(getArgs());
+    parser.parse();
 
+    // parser test
+    qDebug()<<"Ok "<<parser.isOk();
+    qDebug()<<"Help"<<parser.isHelpSelected();
+    qDebug()<<"input "<<parser.inputPath();
+    qDebug()<<"output "<<parser.outputPath();
+    qDebug()<<"d "<<parser.isDenoisingSelected();
+    qDebug()<<"dm "<<parser.denoiseMethod();
+    qDebug()<<"dv "<<parser.denoiseValues();
+    qDebug()<<"n "<<parser.isNoisingSelected();
+    qDebug()<<"nm "<<parser.noiseMethod();
+    qDebug()<<"ni "<<parser.noiseIntensity();
+    qDebug()<<"np "<<parser.noiseProbability();//*/
+
+    if (!parser.isOk()){
+        console.printCommands();
+        qApp->exit(1);
+        return;
+    }
+    if (parser.isHelpSelected()){
+        console.printCommands();
+        qApp->exit(0);
+        return;
+    }
+    // open image
+    Orig->load(parser.inputPath());
+    int n=Orig->height();
+    int m=Orig->width();
+    delete Output;
+    delete Orig;
+    Orig = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+    Orig->load(parser.inputPath());
+    Output = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+    Output->fill(Qt::black);
+    // noising
+    if (parser.isNoisingSelected()){
+        delete Noise;
+        Noise = new QImage(QSize(m,n), QImage::Format_ARGB32_Premultiplied);
+        Noise->fill(Qt::black);
+        delete noiseSettings;
+        QStringList n_in=parser.noiseIntensity().split(":");
+        QStringList n_prob=parser.noiseIntensity().split(":");
+
+        noiseSettings= new noiseClass(0,n_in[0].toInt(),n_in[1].toInt(),n_in[2].toInt(),n_prob[0].toInt(),n_prob[1].toInt(),n_prob[2].toInt());
+        if (parser.noiseMethod()=="normal"){ noiseSettings->distribution=1; noiseSettings->edit_num=15;}
+        if (noiseSettings->distribution==0) add_noise(Orig,Noise,noiseSettings);
+        if (noiseSettings->distribution==1) add_noise_n(Orig,Noise,noiseSettings);
+        if (!parser.isDenoisingSelected()) Noise->save(parser.outputPath(),0,-1);
+
+    }
+    //denoising
+    if (parser.isDenoisingSelected()){
+        this->show();
+        ui->cancelButton->setText(parser.outputPath());
+
+        std::cout<<"Press ESC if you want to cancel denoising"<<std::endl;
+        std::cout<<"Current denoising progress (0 to 10) :";
+        QStringList d_values=parser.denoiseValues().split(":");
+        qDebug()<<d_values;
+        qDebug()<<d_values[0].toInt()<<" "<<d_values[1].toInt()<<" "<<d_values[2].toInt();
+        delete denoiseSettings;
+        denoiseSettings=new denoiseClass(parser.denoiseMethod(),d_values[0].toInt(),d_values[1].toInt(),d_values[2].toInt());
+        denoiser->setSettings(denoiseSettings);
+        denoiser->setDenoisingMethod(parser.denoiseMethod());
+
+        if (parser.isNoisingSelected()) denoiser->setImage(Noise);
+        else denoiser->setImage(Orig);
+
+        denoiser->startRender();
+        //QtConcurrent::run(denoiser,&QDenoiser::startRender);
+
+        QTimer *timer=new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(consoleTimeout()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),this,SLOT(consoleTimeout()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),timer,SLOT(stop()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(finished()),timer,SLOT(deleteLater()),Qt::UniqueConnection);
+        connect(denoiser,SIGNAL(errorString(QString)),this,SLOT(popMessageBox(QString)),Qt::UniqueConnection);
+        timer->start(50);
+        timer->setSingleShot(false);//*/
+
+    }
 
     qApp->exit();
+
+}
+
+void MainWindow::consoleTimeout(){
+    /*static int count=0;
+    QString convert=QString::number(denoiser->getProgress());
+    convert.chop(1);
+    if (convert.toInt()>count){
+        count++;
+        std::cout<<"=";
+    }//*/
+    if (!denoiser->isRendering()){
+        if (!Output->isNull()) delete Output;
+        Output = new QImage(*denoiser->getImage());
+        Output->save(ui->cancelButton->text(),0,-1);
+    }
 }
 
 void MainWindow::on_openButton_clicked()
@@ -505,14 +603,7 @@ void MainWindow::add_noise_n(QImage *original,QImage *noised,noiseClass* noiseSe
     }//*/
 }
 
-void MainWindow::finished(double diff)
-{
-    isRendering=false;
-    ui->denoiseButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
-    ui->denoisedLabel->setPixmap(QPixmap::fromImage(*Output));
-    ui->denoisedLabel->repaint();
-    ui->elapsedLabel->setText("Time elapsed:"+QString::number(diff)+" sec.");
-}
+
 
 
 QImage MainWindow::blurred(const QImage& image, const QRect& rect, int radius, bool alphaOnly)

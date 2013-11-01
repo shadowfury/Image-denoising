@@ -9,6 +9,9 @@
 #include "droparea.h"
 #include "RgbMy.h"
 #include "settingwidget.h"
+#include "console/formatter.h"
+#include "console/parser.h"
+
 
 namespace Ui {
 class MainWindow;
@@ -61,6 +64,7 @@ public slots:
     QStringList getArgs();
 
     void onEventLoopStarted();
+    void consoleTimeout();
 
 
 private slots:
@@ -78,7 +82,6 @@ private slots:
     void denoise_select_m();
     void activeChanged(int comboIndex);
 
-    void finished(double diff);
 
 
 

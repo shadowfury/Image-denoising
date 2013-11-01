@@ -17,7 +17,9 @@ SOURCES += src/main.cpp\
     src/droparea.cpp \
     src/blur/blurwidget.cpp \
     src/settingwidget.cpp \
-    src/denoise/qdenoiser.cpp
+    src/denoise/qdenoiser.cpp \
+    src/console/formatter.cpp \
+    src/console/parser.cpp
 
 HEADERS  += src/mainwindow.h \
     src/denoise/noisewidget.h \
@@ -29,7 +31,9 @@ HEADERS  += src/mainwindow.h \
     src/blur/blurwidget.h \
     src/blur/Blur.h \
     src/settingwidget.h \
-    src/denoise/qdenoiser.h
+    src/denoise/qdenoiser.h \
+    src/console/formatter.h \
+    src/console/parser.h
 
 FORMS    += src/mainwindow.ui
 MOC_DIR += ./release/objects
